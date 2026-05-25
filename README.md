@@ -22,6 +22,8 @@ Zod
 Sonner
 i18next
 React Router
+Storybook
+Caddy
 ```
 
 Target direction is documented in:
@@ -38,14 +40,34 @@ npm run dev
 npm run lint
 npm run build
 npm run preview
+npm run storybook
+npm run build-storybook
 ```
+
+Production Docker runtime:
+
+```bash
+docker build -t skarbix-frontend .
+docker run --rm -p 8081:80 skarbix-frontend
+```
+
+Storybook Docker runtime:
+
+```bash
+docker build -f Dockerfile.storybook -t skarbix-storybook .
+docker run --rm -p 6006:80 skarbix-storybook
+```
+
+Both containers serve static files through Caddy. Coolify/Traefik remains the
+external reverse proxy and HTTPS layer.
 
 ## Build Status
 
-Production build has been checked successfully with Node 22 in Docker:
+Production build has been checked successfully with Node 22:
 
 ```bash
-docker run --rm -v /opt/skarbix/frontend:/app -w /app node:22-alpine sh -lc 'npm ci && npm run build'
+npm ci
+npm run build
 ```
 
 Known warnings:

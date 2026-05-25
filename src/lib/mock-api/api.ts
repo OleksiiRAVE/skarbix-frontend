@@ -230,7 +230,8 @@ export const fetchMonobankStatus = async (): Promise<MonobankConnection> => {
   return { ...mockMonobankConnection };
 };
 
-export const connectMonobank = async (_token: string) => {
+export const connectMonobank = async (token: string) => {
+  void token;
   await delay(1500);
   return { connected: true, accountName: 'Monobank White', importedTransactions: 0 };
 };

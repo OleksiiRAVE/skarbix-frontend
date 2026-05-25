@@ -1,0 +1,14 @@
+services:
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "8081:80"
+
+  storybook:
+    build:
+      context: .
+      dockerfile: Dockerfile.storybook
+    ports:
+      - "6006:80"

@@ -19,17 +19,13 @@ const suggestedPrompts = [
 ];
 
 export default function AIAssistantPage() {
-  const [messages, setMessages] = useState<AIMessage[]>([]);
+  const [messages, setMessages] = useState<AIMessage[]>(() => mockAIMessages.map((m) => ({ ...m })));
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
   const [recording, setRecording] = useState(false);
   const [typing, setTyping] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
-
-  useEffect(() => {
-    setMessages(mockAIMessages.map((m) => ({ ...m })));
-  }, []);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });

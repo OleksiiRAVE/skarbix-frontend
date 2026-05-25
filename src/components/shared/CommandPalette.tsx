@@ -18,17 +18,23 @@ export function CommandPalette() {
   const inputRef = useRef<HTMLInputElement>(null);
   const navigate = useNavigate();
 
+  const closePalette = () => {
+    setOpen(false);
+    setQuery('');
+    setSelectedIndex(0);
+  };
+
   const navItems: CommandItem[] = [
-    { id: 'dash', label: 'Dashboard', shortcut: 'G D', icon: LayoutDashboard, action: () => { navigate('/'); setOpen(false); } },
-    { id: 'tx', label: 'Transactions', shortcut: 'G T', icon: Receipt, action: () => { navigate('/transactions'); setOpen(false); } },
-    { id: 'analytics', label: 'Analytics', shortcut: 'G A', icon: BarChart3, action: () => { navigate('/analytics'); setOpen(false); } },
-    { id: 'budgets', label: 'Budgets', shortcut: 'G B', icon: PiggyBank, action: () => { navigate('/budgets'); setOpen(false); } },
-    { id: 'debts', label: 'Debts', shortcut: 'G D', icon: Users, action: () => { navigate('/debts'); setOpen(false); } },
-    { id: 'ai', label: 'AI Assistant', shortcut: 'G I', icon: Sparkles, action: () => { navigate('/ai-assistant'); setOpen(false); } },
-    { id: 'payments', label: 'Payments', icon: CreditCard, action: () => { navigate('/payments'); setOpen(false); } },
-    { id: 'history', label: 'History', icon: History, action: () => { navigate('/history'); setOpen(false); } },
-    { id: 'settings', label: 'Settings', shortcut: 'G S', icon: Settings, action: () => { navigate('/settings'); setOpen(false); } },
-    { id: 'logout', label: 'Logout', icon: LogOut, action: () => { navigate('/auth'); setOpen(false); } },
+    { id: 'dash', label: 'Dashboard', shortcut: 'G D', icon: LayoutDashboard, action: () => { navigate('/'); closePalette(); } },
+    { id: 'tx', label: 'Transactions', shortcut: 'G T', icon: Receipt, action: () => { navigate('/transactions'); closePalette(); } },
+    { id: 'analytics', label: 'Analytics', shortcut: 'G A', icon: BarChart3, action: () => { navigate('/analytics'); closePalette(); } },
+    { id: 'budgets', label: 'Budgets', shortcut: 'G B', icon: PiggyBank, action: () => { navigate('/budgets'); closePalette(); } },
+    { id: 'debts', label: 'Debts', shortcut: 'G D', icon: Users, action: () => { navigate('/debts'); closePalette(); } },
+    { id: 'ai', label: 'AI Assistant', shortcut: 'G I', icon: Sparkles, action: () => { navigate('/ai-assistant'); closePalette(); } },
+    { id: 'payments', label: 'Payments', icon: CreditCard, action: () => { navigate('/payments'); closePalette(); } },
+    { id: 'history', label: 'History', icon: History, action: () => { navigate('/history'); closePalette(); } },
+    { id: 'settings', label: 'Settings', shortcut: 'G S', icon: Settings, action: () => { navigate('/settings'); closePalette(); } },
+    { id: 'logout', label: 'Logout', icon: LogOut, action: () => { navigate('/auth'); closePalette(); } },
   ];
 
   const filtered = query.trim()
@@ -39,25 +45,30 @@ export function CommandPalette() {
     const handler = (e: KeyboardEvent) => {
       if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
         e.preventDefault();
-        setOpen((prev) => !prev);
+        setOpen((prev) => {
+          if (prev) {
+            setQuery('');
+            setSelectedIndex(0);
+          }
+          return !prev;
+        });
       }
-      if (e.key === 'Escape') setOpen(false);
+      if (e.key === 'Escape') closePalette();
     };
     window.addEventListener('keydown', handler);
     return () => window.removeEventListener('keydown', handler);
   }, []);
 
   useEffect(() => {
-    setSelectedIndex(0);
-  }, [query]);
-
-  useEffect(() => {
     if (open) {
       setTimeout(() => inputRef.current?.focus(), 50);
-    } else {
-      setQuery('');
     }
   }, [open]);
+
+  const handleQueryChange = (value: string) => {
+    setQuery(value);
+    setSelectedIndex(0);
+  };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'ArrowDown') {
@@ -81,7 +92,7 @@ export function CommandPalette() {
           exit={{ opacity: 0 }}
           transition={{ duration: 0.15 }}
           className="fixed inset-0 z-[100] flex items-start justify-center pt-[15vh]"
-          onClick={() => setOpen(false)}
+          onClick={closePalette}
         >
           {/* Backdrop */}
           <div className="absolute inset-0 bg-black/30 backdrop-blur-sm" />
@@ -101,7 +112,7 @@ export function CommandPalette() {
               <input
                 ref={inputRef}
                 value={query}
-                onChange={(e) => setQuery(e.target.value)}
+                onChange={(e) => handleQueryChange(e.target.value)}
                 onKeyDown={handleKeyDown}
                 placeholder="Search commands..."
                 className="flex-1 text-sm text-[var(--sk-text)] placeholder:text-[var(--sk-text-secondary)] bg-transparent outline-none"
