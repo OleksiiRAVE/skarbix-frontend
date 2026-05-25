@@ -44,11 +44,7 @@ function DashboardEntry() {
     return <LandingPage />;
   }
 
-  return (
-    <AppLayout>
-      <DashboardPage />
-    </AppLayout>
-  );
+  return <Navigate to="/dashboard" replace />;
 }
 
 function AppPage({ children }: { children: React.ReactNode }) {

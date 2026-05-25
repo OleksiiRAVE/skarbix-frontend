@@ -9,6 +9,12 @@ export default defineConfig({
   plugins: [inspectAttr(), react()],
   server: {
     port: 3000,
+    allowedHosts: ['dev-app.skarbix.xyz'],
+    hmr: {
+      host: 'dev-app.skarbix.xyz',
+      protocol: 'wss',
+      clientPort: 443,
+    },
   },
   resolve: {
     alias: {
