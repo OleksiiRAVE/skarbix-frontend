@@ -7,17 +7,19 @@ import {
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
+const APP_BASE_URL = 'https://app.skarbix.xyz';
+
 const features = [
   {
     icon: Sparkles,
     title: 'AI-Powered Insights',
-    description: 'Our AI analyzes your spending patterns and provides personalized recommendations to help you save more.',
+    description: 'Ask plain-language questions about spending, budgets, and goals, with AI workflows designed for your own finance data.',
     color: '#8B5CF6',
   },
   {
     icon: Wallet,
-    title: 'Multi-Bank Support',
-    description: 'Connect your Monobank and other Ukrainian banks. All your finances in one unified dashboard.',
+    title: 'Ukraine-First Banking',
+    description: 'Built around UAH, Ukrainian categories, and a Monobank-ready integration path for everyday money management.',
     color: '#3B82F6',
   },
   {
@@ -28,14 +30,14 @@ const features = [
   },
   {
     icon: Shield,
-    title: 'Bank-Grade Security',
-    description: 'AES-256 encryption, secure API tokens, and complete data privacy. Your finances stay yours.',
+    title: 'Privacy By Design',
+    description: 'A security-conscious architecture for sensitive finance data, with app secrets kept out of public builds.',
     color: '#EF4444',
   },
   {
     icon: Zap,
-    title: 'Real-Time Sync',
-    description: 'Transactions sync automatically. No manual entry needed — Skarbix handles it all.',
+    title: 'Fast Daily Workflow',
+    description: 'Review cash flow, add transactions, and spot recurring payments without losing the thread of your day.',
     color: '#F59E0B',
   },
   {
@@ -46,20 +48,20 @@ const features = [
   },
 ];
 
-const stats = [
-  { value: '50K+', label: 'Active Users' },
-  { value: '2M+', label: 'Transactions Tracked' },
-  { value: '₴500M+', label: 'Assets Managed' },
-  { value: '99.9%', label: 'Uptime' },
+const trustSignals = [
+  { value: 'UAH', label: 'Native currency focus' },
+  { value: 'AI', label: 'Assistant-ready workflows' },
+  { value: 'Mono', label: 'Monobank integration path' },
+  { value: '2 env', label: 'Production and staging' },
 ];
 
 const footerLinks = {
   product: [
-    { label: 'Dashboard', path: '/' },
-    { label: 'Transactions', path: '/transactions' },
-    { label: 'Analytics', path: '/analytics' },
-    { label: 'Budgets', path: '/budgets' },
-    { label: 'AI Assistant', path: '/ai-assistant' },
+    { label: 'Dashboard', href: `${APP_BASE_URL}/dashboard` },
+    { label: 'Transactions', href: `${APP_BASE_URL}/transactions` },
+    { label: 'Analytics', href: `${APP_BASE_URL}/analytics` },
+    { label: 'Budgets', href: `${APP_BASE_URL}/budgets` },
+    { label: 'AI Assistant', href: `${APP_BASE_URL}/ai-assistant` },
   ],
   support: [
     { label: 'Help Center', path: '/help' },
@@ -85,10 +87,10 @@ export default function LandingPage() {
             <span className="text-[#8B5CF6] font-semibold text-base tracking-tight">Skarbix</span>
           </Link>
           <div className="flex items-center gap-3">
-            <Link to="/auth" className="text-sm text-[var(--sk-text-secondary)] hover:text-[var(--sk-text)] transition-colors hidden sm:block">Sign In</Link>
-            <Link to="/auth">
-              <Button className="h-9 bg-[#0F0F0F] hover:bg-[#1F1F1F] text-white rounded-full text-sm px-5">Get Started</Button>
-            </Link>
+            <a href={`${APP_BASE_URL}/auth`} className="text-sm text-[var(--sk-text-secondary)] hover:text-[var(--sk-text)] transition-colors hidden sm:block">Sign In</a>
+            <Button asChild className="h-9 bg-[#0F0F0F] hover:bg-[#1F1F1F] text-white rounded-full text-sm px-5">
+              <a href={`${APP_BASE_URL}/auth`}>Get Started</a>
+            </Button>
           </div>
         </div>
       </nav>
@@ -109,28 +111,49 @@ export default function LandingPage() {
               <span className="text-[#8B5CF6]"> Smarter</span>
             </h1>
             <p className="text-sm sm:text-lg text-[var(--sk-text-secondary)] max-w-xl mx-auto mb-8 leading-relaxed">
-              Track expenses, manage budgets, and gain AI-powered financial insights. All your Ukrainian bank accounts in one beautiful dashboard.
+              Track expenses, plan budgets, and get AI-guided financial clarity for Ukrainian everyday money.
             </p>
             <div className="flex items-center justify-center gap-3">
-              <Link to="/auth">
-                <Button className="h-11 sm:h-12 bg-[#8B5CF6] hover:bg-[#7C3AED] text-white rounded-full text-sm sm:text-base font-medium px-6 sm:px-8">
+              <Button asChild className="h-11 sm:h-12 bg-[#8B5CF6] hover:bg-[#7C3AED] text-white rounded-full text-sm sm:text-base font-medium px-6 sm:px-8">
+                <a href={`${APP_BASE_URL}/auth`}>
                   Get Started Free <ArrowRight className="w-4 h-4 ml-2" />
-                </Button>
-              </Link>
+                </a>
+              </Button>
               <Link to="/help">
                 <Button variant="outline" className="h-11 sm:h-12 rounded-full text-sm sm:text-base font-medium px-5 sm:px-6 border-[var(--sk-border)]">
                   Learn More
                 </Button>
               </Link>
             </div>
+            <div className="mt-12 rounded-[24px] border border-[var(--sk-border)] bg-white p-3 shadow-[0_24px_70px_rgba(15,15,15,0.10)]">
+              <div className="rounded-[18px] bg-[#F7F7FA] p-4 text-left">
+                <div className="mb-4 flex items-center justify-between">
+                  <div>
+                    <p className="text-xs font-medium text-[var(--sk-text-secondary)]">Total Balance</p>
+                    <p className="mt-1 text-2xl font-bold text-[var(--sk-text)]">₴128,450</p>
+                  </div>
+                  <div className="rounded-full bg-[#10B981]/10 px-3 py-1 text-xs font-semibold text-[#047857]">+12.4%</div>
+                </div>
+                <div className="grid grid-cols-3 gap-3">
+                  {['Cash flow', 'Budgets', 'AI insight'].map((label, i) => (
+                    <div key={label} className="rounded-xl border border-[var(--sk-border)] bg-white p-3">
+                      <div className="mb-3 h-1.5 rounded-full bg-[#8B5CF6]/20">
+                        <div className="h-1.5 rounded-full bg-[#8B5CF6]" style={{ width: `${72 - i * 18}%` }} />
+                      </div>
+                      <p className="text-[11px] font-medium text-[var(--sk-text-secondary)]">{label}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
           </motion.div>
         </div>
       </section>
 
-      {/* Stats */}
+      {/* Trust signals */}
       <section className="py-10 sm:py-14 px-4 sm:px-6 border-y" style={{ borderColor: 'var(--sk-border)', backgroundColor: 'var(--sk-card)' }}>
         <div className="max-w-4xl mx-auto grid grid-cols-2 sm:grid-cols-4 gap-6 sm:gap-8">
-          {stats.map((stat, i) => (
+          {trustSignals.map((stat, i) => (
             <motion.div
               key={stat.label}
               initial={{ opacity: 0, y: 15 }}
@@ -198,13 +221,13 @@ export default function LandingPage() {
         >
           <h2 className="text-xl sm:text-2xl lg:text-3xl font-bold mb-3">Ready to Take Control?</h2>
           <p className="text-sm sm:text-base text-[var(--sk-text-secondary)] mb-6 max-w-md mx-auto">
-            Join thousands of Ukrainians who trust Skarbix to manage their finances smarter.
+            Start shaping a calmer finance workflow for UAH budgets, spending, and AI-assisted decisions.
           </p>
-          <Link to="/auth">
-            <Button className="h-11 sm:h-12 bg-[#8B5CF6] hover:bg-[#7C3AED] text-white rounded-full text-sm sm:text-base font-medium px-8">
+          <Button asChild className="h-11 sm:h-12 bg-[#8B5CF6] hover:bg-[#7C3AED] text-white rounded-full text-sm sm:text-base font-medium px-8">
+            <a href={`${APP_BASE_URL}/auth`}>
               Start for Free <ArrowRight className="w-4 h-4 ml-2" />
-            </Button>
-          </Link>
+            </a>
+          </Button>
         </motion.div>
       </section>
 
@@ -234,7 +257,7 @@ export default function LandingPage() {
               <h4 className="text-[11px] font-semibold uppercase tracking-wider text-[var(--sk-text)] mb-3">Product</h4>
               <ul className="space-y-2">
                 {footerLinks.product.map((l) => (
-                  <li key={l.label}><Link to={l.path} className="text-xs text-[var(--sk-text-secondary)] hover:text-[#8B5CF6] transition-colors">{l.label}</Link></li>
+                  <li key={l.label}><a href={l.href} className="text-xs text-[var(--sk-text-secondary)] hover:text-[#8B5CF6] transition-colors">{l.label}</a></li>
                 ))}
               </ul>
             </div>

@@ -28,9 +28,43 @@ import PrivacyPage from '@/app/privacy/page';
 import TermsPage from '@/app/terms/page';
 import CookiesPage from '@/app/cookies/page';
 
+const MARKETING_HOSTS = new Set(['skarbix.xyz', 'www.skarbix.xyz']);
+
+function isMarketingHost() {
+  return MARKETING_HOSTS.has(window.location.hostname.toLowerCase());
+}
+
 // App layout wrapper (with sidebar + topbar)
 function AppLayout({ children }: { children: React.ReactNode }) {
   return <AppShell>{children}</AppShell>;
+}
+
+function DashboardEntry() {
+  if (isMarketingHost()) {
+    return <LandingPage />;
+  }
+
+  return (
+    <AppLayout>
+      <DashboardPage />
+    </AppLayout>
+  );
+}
+
+function AppPage({ children }: { children: React.ReactNode }) {
+  if (isMarketingHost()) {
+    return <Navigate to="/" replace />;
+  }
+
+  return <AppLayout>{children}</AppLayout>;
+}
+
+function AppSurface({ children }: { children: React.ReactNode }) {
+  if (isMarketingHost()) {
+    return <Navigate to="/" replace />;
+  }
+
+  return children;
 }
 
 export default function App() {
@@ -40,8 +74,8 @@ export default function App() {
       <Route path="/landing" element={<LandingPage />} />
 
       {/* Auth & onboarding - no sidebar */}
-      <Route path="/auth" element={<AuthPage />} />
-      <Route path="/onboarding" element={<OnboardingPage />} />
+      <Route path="/auth" element={<AppSurface><AuthPage /></AppSurface>} />
+      <Route path="/onboarding" element={<AppSurface><OnboardingPage /></AppSurface>} />
 
       {/* Static pages - no sidebar */}
       <Route path="/help" element={<HelpCenterPage />} />
@@ -51,21 +85,22 @@ export default function App() {
       <Route path="/cookies" element={<CookiesPage />} />
 
       {/* App pages - with sidebar + topbar */}
-      <Route path="/" element={<AppLayout><DashboardPage /></AppLayout>} />
-      <Route path="/transactions" element={<AppLayout><TransactionsPage /></AppLayout>} />
-      <Route path="/accounts" element={<AppLayout><AccountsPage /></AppLayout>} />
-      <Route path="/categories" element={<AppLayout><CategoriesPage /></AppLayout>} />
-      <Route path="/debts" element={<AppLayout><DebtsPage /></AppLayout>} />
-      <Route path="/subscriptions" element={<AppLayout><SubscriptionsPage /></AppLayout>} />
-      <Route path="/analytics" element={<AppLayout><AnalyticsPage /></AppLayout>} />
-      <Route path="/capital" element={<AppLayout><CapitalPage /></AppLayout>} />
-      <Route path="/calendar" element={<AppLayout><CalendarPage /></AppLayout>} />
-      <Route path="/budgets" element={<AppLayout><BudgetsPage /></AppLayout>} />
-      <Route path="/goals" element={<AppLayout><GoalsPage /></AppLayout>} />
-      <Route path="/ai-assistant" element={<AppLayout><AIAssistantPage /></AppLayout>} />
-      <Route path="/payments" element={<AppLayout><PaymentsPage /></AppLayout>} />
-      <Route path="/history" element={<AppLayout><HistoryPage /></AppLayout>} />
-      <Route path="/settings" element={<AppLayout><SettingsPage /></AppLayout>} />
+      <Route path="/" element={<DashboardEntry />} />
+      <Route path="/dashboard" element={<AppPage><DashboardPage /></AppPage>} />
+      <Route path="/transactions" element={<AppPage><TransactionsPage /></AppPage>} />
+      <Route path="/accounts" element={<AppPage><AccountsPage /></AppPage>} />
+      <Route path="/categories" element={<AppPage><CategoriesPage /></AppPage>} />
+      <Route path="/debts" element={<AppPage><DebtsPage /></AppPage>} />
+      <Route path="/subscriptions" element={<AppPage><SubscriptionsPage /></AppPage>} />
+      <Route path="/analytics" element={<AppPage><AnalyticsPage /></AppPage>} />
+      <Route path="/capital" element={<AppPage><CapitalPage /></AppPage>} />
+      <Route path="/calendar" element={<AppPage><CalendarPage /></AppPage>} />
+      <Route path="/budgets" element={<AppPage><BudgetsPage /></AppPage>} />
+      <Route path="/goals" element={<AppPage><GoalsPage /></AppPage>} />
+      <Route path="/ai-assistant" element={<AppPage><AIAssistantPage /></AppPage>} />
+      <Route path="/payments" element={<AppPage><PaymentsPage /></AppPage>} />
+      <Route path="/history" element={<AppPage><HistoryPage /></AppPage>} />
+      <Route path="/settings" element={<AppPage><SettingsPage /></AppPage>} />
 
       {/* Redirect */}
       <Route path="*" element={<Navigate to="/" replace />} />
