@@ -47,6 +47,14 @@ function DashboardEntry() {
   return <Navigate to="/dashboard" replace />;
 }
 
+function LandingEntry() {
+  if (isMarketingHost()) {
+    return <LandingPage />;
+  }
+
+  return <Navigate to="/dashboard" replace />;
+}
+
 function AppPage({ children }: { children: React.ReactNode }) {
   if (isMarketingHost()) {
     return <Navigate to="/" replace />;
@@ -67,7 +75,7 @@ export default function App() {
   return (
     <Routes>
       {/* Landing page - no sidebar */}
-      <Route path="/landing" element={<LandingPage />} />
+      <Route path="/landing" element={<LandingEntry />} />
 
       {/* Auth & onboarding - no sidebar */}
       <Route path="/auth" element={<AppSurface><AuthPage /></AppSurface>} />
