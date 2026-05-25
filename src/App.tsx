@@ -52,7 +52,14 @@ function LandingEntry() {
     return <LandingPage />;
   }
 
-  return <Navigate to="/dashboard" replace />;
+  return (
+    <div className="min-h-screen bg-[var(--sk-bg)] text-[var(--sk-text)] flex items-center justify-center px-6">
+      <div className="text-center">
+        <p className="text-sm font-semibold text-[#8B5CF6]">404</p>
+        <h1 className="mt-3 text-3xl font-semibold tracking-tight">Not Found</h1>
+      </div>
+    </div>
+  );
 }
 
 function AppPage({ children }: { children: React.ReactNode }) {

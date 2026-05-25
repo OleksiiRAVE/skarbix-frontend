@@ -11,6 +11,14 @@
 		Referrer-Policy "strict-origin-when-cross-origin"
 	}
 
-	try_files {path} /index.html
-	file_server
+	@appLanding {
+		host app.skarbix.xyz
+		path /landing
+	}
+
+	route {
+		respond @appLanding "Not Found" 404
+		try_files {path} /index.html
+		file_server
+	}
 }
