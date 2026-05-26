@@ -1,73 +1,126 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import { Icon } from '@iconify/react';
 import { motion } from 'framer-motion';
-import { Plus, ShoppingCart, Car, Film, Utensils, Home, Zap, Heart, Briefcase, GraduationCap, Plane, MoreHorizontal } from 'lucide-react';
+import { Plus, Tags } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/button';
-import { toast } from 'sonner';
-
-const categories = [
-  { id: '1', name: 'Groceries', icon: ShoppingCart, color: '#10B981', spent: 12500, budget: 18000 },
-  { id: '2', name: 'Transport', icon: Car, color: '#3B82F6', spent: 4200, budget: 6000 },
-  { id: '3', name: 'Entertainment', icon: Film, color: '#8B5CF6', spent: 3100, budget: 5000 },
-  { id: '4', name: 'Dining Out', icon: Utensils, color: '#F59E0B', spent: 5800, budget: 7000 },
-  { id: '5', name: 'Housing', icon: Home, color: '#EF4444', spent: 15000, budget: 15000 },
-  { id: '6', name: 'Utilities', icon: Zap, color: '#06B6D4', spent: 3200, budget: 4000 },
-  { id: '7', name: 'Health', icon: Heart, color: '#EC4899', spent: 1800, budget: 3000 },
-  { id: '8', name: 'Work', icon: Briefcase, color: '#6366F1', spent: 900, budget: 2000 },
-  { id: '9', name: 'Education', icon: GraduationCap, color: '#14B8A6', spent: 2500, budget: 5000 },
-  { id: '10', name: 'Travel', icon: Plane, color: '#F97316', spent: 0, budget: 8000 },
-  { id: '11', name: 'Other', icon: MoreHorizontal, color: '#9CA3AF', spent: 1200, budget: 2000 },
-];
+import { CardSkeleton } from '@/components/skeletons';
+import { AddCategoryModal } from '@/components/categories/AddCategoryModal';
+import { fetchCategories } from '@/lib/mock-api/api';
+import type { Category } from '@/types';
 
 export default function CategoriesPage() {
-  const [items] = useState(categories);
+  const { t } = useTranslation();
+  const [loading, setLoading] = useState(true);
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [modalOpen, setModalOpen] = useState(false);
+
+  const loadCategories = async () => {
+    const data = await fetchCategories();
+    setCategories(data);
+    setLoading(false);
+  };
+
+  useEffect(() => {
+    let cancelled = false;
+    fetchCategories().then((data) => {
+      if (cancelled) return;
+      setCategories(data);
+      setLoading(false);
+    });
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  if (loading) {
+    return (
+      <div className="space-y-4">
+        <div className="flex items-center justify-between">
+          <h1 className="text-xl font-bold text-[var(--sk-text)]">{t('sidebar.categories')}</h1>
+        </div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
+          {[1, 2, 3].map((item) => <CardSkeleton key={item} />)}
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-4 sm:space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
-          <h1 className="text-xl sm:text-2xl font-bold text-[var(--sk-text)]">Categories</h1>
-          <p className="text-xs sm:text-sm text-[var(--sk-text-secondary)] mt-0.5">Manage your spending categories</p>
+          <h1 className="text-xl sm:text-2xl font-bold text-[var(--sk-text)]">{t('sidebar.categories')}</h1>
+          <p className="text-xs sm:text-sm text-[var(--sk-text-secondary)] mt-0.5">
+            {categories.length} {t('categories.count', { count: categories.length })}
+          </p>
         </div>
-        <Button onClick={() => toast.info('Coming soon!')} className="h-10 bg-[#0F0F0F] hover:bg-[#1F1F1F] text-white rounded-full text-sm font-medium px-4 w-fit">
-          <Plus className="w-4 h-4 mr-1.5" /> Add Category
+        <Button
+          onClick={() => setModalOpen(true)}
+          className="h-9 sm:h-10 bg-black text-white dark:bg-white dark:text-black hover:bg-black/90 dark:hover:bg-white/90 rounded-full px-3 sm:px-5 text-xs sm:text-sm w-fit"
+        >
+          <Plus className="w-3.5 h-3.5 sm:w-4 sm:h-4 mr-1 sm:mr-1.5" />
+          <span className="hidden sm:inline">{t('addCategory.title')}</span>
+          <span className="sm:hidden">{t('general.add')}</span>
         </Button>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
-        {items.map((cat, i) => {
-          const Icon = cat.icon;
-          const percent = Math.min((cat.spent / cat.budget) * 100, 100);
-          return (
+      {categories.length === 0 ? (
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="min-h-[280px] rounded-[20px] border border-dashed border-[var(--sk-border)] bg-[var(--sk-card)] flex flex-col items-center justify-center text-center px-6"
+        >
+          <div className="w-14 h-14 rounded-2xl bg-[#8B5CF6]/10 text-[#8B5CF6] flex items-center justify-center mb-4">
+            <Tags className="w-6 h-6" />
+          </div>
+          <h2 className="text-base sm:text-lg font-semibold text-[var(--sk-text)]">{t('categories.emptyTitle')}</h2>
+          <p className="text-xs sm:text-sm text-[var(--sk-text-secondary)] mt-1 max-w-[360px]">
+            {t('categories.emptySubtitle')}
+          </p>
+          <Button
+            onClick={() => setModalOpen(true)}
+            className="mt-5 h-10 bg-[#8B5CF6] hover:bg-[#7C3AED] text-white rounded-full text-sm font-medium px-5"
+          >
+            <Plus className="w-4 h-4 mr-1.5" />
+            {t('addCategory.title')}
+          </Button>
+        </motion.div>
+      ) : (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
+          {categories.map((category, index) => (
             <motion.div
-              key={cat.id}
+              key={category.id}
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: i * 0.04 }}
-              className="bg-[var(--sk-card)] rounded-[16px] sm:rounded-[20px] p-4 sm:p-5 border border-[var(--sk-border)] shadow-sm"
+              transition={{ delay: index * 0.04 }}
+              className="bg-[var(--sk-card)] rounded-[16px] sm:rounded-[20px] p-4 sm:p-5 border border-[var(--sk-border)] shadow-sm hover:shadow-md transition-shadow"
             >
-              <div className="flex items-center gap-3 mb-3">
-                <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ backgroundColor: `${cat.color}18` }}>
-                  <Icon className="w-5 h-5" style={{ color: cat.color }} />
+              <div className="flex items-center gap-3">
+                <div
+                  className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0"
+                  style={{ backgroundColor: `${category.color}18`, color: category.color }}
+                >
+                  <Icon icon={category.icon || 'lucide:tag'} className="w-5 h-5" />
                 </div>
-                <div className="flex-1">
-                  <p className="text-sm font-semibold text-[var(--sk-text)]">{cat.name}</p>
-                  <p className="text-xs text-[var(--sk-text-secondary)]">{cat.spent.toLocaleString()} / {cat.budget.toLocaleString()} UAH</p>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-semibold text-[var(--sk-text)] truncate">{category.name}</p>
+                  <p className="text-xs text-[var(--sk-text-secondary)]">
+                    {category.kind === 'income' ? t('categories.kindIncome') : t('categories.kindExpense')}
+                  </p>
                 </div>
               </div>
-              <div className="h-2 bg-[var(--sk-border-light)] rounded-full overflow-hidden">
-                <motion.div
-                  initial={{ width: 0 }}
-                  animate={{ width: `${percent}%` }}
-                  transition={{ duration: 0.6, delay: i * 0.04 }}
-                  className="h-full rounded-full"
-                  style={{ backgroundColor: percent > 90 ? '#EF4444' : cat.color }}
-                />
-              </div>
-              <p className="text-[11px] text-[var(--sk-text-secondary)] mt-2">{percent.toFixed(0)}% used</p>
             </motion.div>
-          );
-        })}
-      </div>
+          ))}
+        </div>
+      )}
+
+      <AddCategoryModal
+        open={modalOpen}
+        onOpenChange={setModalOpen}
+        onSuccess={loadCategories}
+      />
     </div>
   );
 }

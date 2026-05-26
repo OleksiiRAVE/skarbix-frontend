@@ -38,16 +38,16 @@ export const mockAccounts: Account[] = [
 ];
 
 export const mockCategories: Category[] = [
-  { id: 'cat1', name: 'Food & Drinks', icon: 'UtensilsCrossed', color: '#F59E0B', type: 'system', monthlySpent: 8450, monthlyBudget: 10000 },
-  { id: 'cat2', name: 'Transport', icon: 'Car', color: '#8B5CF6', type: 'system', monthlySpent: 2340, monthlyBudget: 3000 },
-  { id: 'cat3', name: 'Shopping', icon: 'ShoppingBag', color: '#EC4899', type: 'system', monthlySpent: 5600, monthlyBudget: 5000 },
-  { id: 'cat4', name: 'Entertainment', icon: 'Film', color: '#10B981', type: 'system', monthlySpent: 1200, monthlyBudget: 2000 },
-  { id: 'cat5', name: 'Bills', icon: 'Receipt', color: '#EF4444', type: 'system', monthlySpent: 4500, monthlyBudget: 4500 },
-  { id: 'cat6', name: 'Health', icon: 'Heart', color: '#06B6D4', type: 'system', monthlySpent: 800, monthlyBudget: 1500 },
-  { id: 'cat7', name: 'Income', icon: 'TrendingUp', color: '#10B981', type: 'system', monthlySpent: 0 },
-  { id: 'cat8', name: 'Taxi', icon: 'Car', color: '#F97316', type: 'custom', monthlySpent: 1890, monthlyBudget: 2000 },
-  { id: 'cat9', name: 'Groceries', icon: 'Apple', color: '#84CC16', type: 'custom', monthlySpent: 6200, monthlyBudget: 7000 },
-  { id: 'cat10', name: 'Subscriptions', icon: 'CreditCard', color: '#6366F1', type: 'custom', monthlySpent: 597, monthlyBudget: 600 },
+  { id: 'cat1', name: 'Food & Drinks', icon: 'UtensilsCrossed', color: '#F59E0B', type: 'system', kind: 'expense', monthlySpent: 8450, monthlyBudget: 10000 },
+  { id: 'cat2', name: 'Transport', icon: 'Car', color: '#8B5CF6', type: 'system', kind: 'expense', monthlySpent: 2340, monthlyBudget: 3000 },
+  { id: 'cat3', name: 'Shopping', icon: 'ShoppingBag', color: '#EC4899', type: 'system', kind: 'expense', monthlySpent: 5600, monthlyBudget: 5000 },
+  { id: 'cat4', name: 'Entertainment', icon: 'Film', color: '#10B981', type: 'system', kind: 'expense', monthlySpent: 1200, monthlyBudget: 2000 },
+  { id: 'cat5', name: 'Bills', icon: 'Receipt', color: '#EF4444', type: 'system', kind: 'expense', monthlySpent: 4500, monthlyBudget: 4500 },
+  { id: 'cat6', name: 'Health', icon: 'Heart', color: '#06B6D4', type: 'system', kind: 'expense', monthlySpent: 800, monthlyBudget: 1500 },
+  { id: 'cat7', name: 'Income', icon: 'TrendingUp', color: '#10B981', type: 'system', kind: 'income', monthlySpent: 0 },
+  { id: 'cat8', name: 'Taxi', icon: 'Car', color: '#F97316', type: 'custom', kind: 'expense', monthlySpent: 1890, monthlyBudget: 2000 },
+  { id: 'cat9', name: 'Groceries', icon: 'Apple', color: '#84CC16', type: 'custom', kind: 'expense', monthlySpent: 6200, monthlyBudget: 7000 },
+  { id: 'cat10', name: 'Subscriptions', icon: 'CreditCard', color: '#6366F1', type: 'custom', kind: 'expense', monthlySpent: 597, monthlyBudget: 600 },
 ];
 
 export const mockTransactions: Transaction[] = [

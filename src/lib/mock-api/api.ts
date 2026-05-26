@@ -45,6 +45,7 @@ const toAccount = (row: {
 const toCategory = (row: {
   id: string;
   name: string;
+  type?: string | null;
   color: string | null;
   icon: string | null;
   is_system: boolean;
@@ -54,6 +55,7 @@ const toCategory = (row: {
   icon: row.icon || 'Tag',
   color: row.color || '#8B5CF6',
   type: row.is_system ? 'system' : 'custom',
+  kind: row.type === 'income' ? 'income' : 'expense',
   monthlySpent: 0,
 });
 
@@ -191,7 +193,7 @@ export const createAccount = async (data: {
   const payload = {
     user_id: userId,
     name: data.name,
-    type: data.type === 'checking' ? 'bank' : data.type,
+    type: data.type,
     balance: data.balance,
     currency: data.currency || 'UAH',
     color: data.color,
@@ -211,6 +213,35 @@ export const createAccount = async (data: {
       .select('id,user_id,name,type,balance,currency')
       .single();
   }
+
+  if (response.error) throw response.error;
+  return toAccount(response.data);
+};
+
+export const updateAccount = async (id: string, data: {
+  name?: string;
+  type?: Account['type'];
+  balance?: number;
+  color?: string;
+  icon?: string;
+}) => {
+  const userId = await getUserId();
+  if (!userId) throw new Error('Not signed in');
+
+  const payload: Record<string, unknown> = {};
+  if (data.name !== undefined) payload.name = data.name;
+  if (data.type !== undefined) payload.type = data.type;
+  if (data.balance !== undefined) payload.balance = data.balance;
+  if (data.color !== undefined) payload.color = data.color;
+  if (data.icon !== undefined) payload.icon = data.icon;
+
+  const response = await supabase
+    .from('accounts')
+    .update(payload)
+    .eq('id', id)
+    .eq('user_id', userId)
+    .select('id,user_id,name,type,balance,currency,color,icon')
+    .single();
 
   if (response.error) throw response.error;
   return toAccount(response.data);
@@ -313,10 +344,9 @@ export const fetchCategories = async (): Promise<Category[]> => {
 
   const { data, error } = await supabase
     .from('categories')
-    .select('id,name,color,icon,is_system')
-    .or(`user_id.is.null,user_id.eq.${userId}`)
-    .order('is_system', { ascending: false })
-    .order('name', { ascending: true });
+    .select('id,name,type,color,icon,is_system')
+    .eq('user_id', userId)
+    .order('created_at', { ascending: false });
 
   if (error) throw error;
   return data.map(toCategory);
@@ -331,12 +361,12 @@ export const createCategory = async (data: Partial<Category>) => {
     .insert({
       user_id: userId,
       name: data.name || 'New Category',
-      type: 'expense',
+      type: data.kind || 'expense',
       color: data.color || '#8B5CF6',
-      icon: data.icon || 'Tag',
+      icon: data.icon || 'lucide:tag',
       is_system: false,
     })
-    .select('id,name,color,icon,is_system')
+    .select('id,name,type,color,icon,is_system')
     .single();
 
   if (error) throw error;

@@ -87,7 +87,7 @@ export function TransactionFilterSheet({ open, onOpenChange, filters, onApply, o
 
   return (
     <Sheet open={open} onOpenChange={handleOpenChange}>
-      <SheetContent className="w-full sm:max-w-[380px] p-0 bg-[var(--sk-card)] border-0 border-l border-[var(--sk-border)] flex flex-col">
+      <SheetContent showCloseButton={false} className="w-full sm:max-w-[380px] p-0 bg-[var(--sk-card)] border-0 border-l border-[var(--sk-border)] flex flex-col">
         {/* Header */}
         <SheetHeader className="p-5 sm:p-6 pb-3 sm:pb-4 border-b border-[var(--sk-border)] flex flex-row items-center justify-between">
           <div className="flex items-center gap-2">

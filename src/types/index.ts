@@ -46,6 +46,7 @@ export interface Category {
   icon: string;
   color: string;
   type: 'system' | 'custom';
+  kind: 'income' | 'expense';
   monthlyBudget?: number;
   monthlySpent: number;
   mccCodes?: string[];
