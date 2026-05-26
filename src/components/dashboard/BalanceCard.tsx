@@ -1,12 +1,19 @@
 import { useState, useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
-import { Eye, EyeOff, TrendingUp } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
+import { TrendingUp } from 'lucide-react';
 import { formatCurrency } from '@/lib/utils/format';
 
 interface BalanceCardProps {
   balance: number;
   change: number;
   changeAmount: number;
+  income?: number;
+  incomeChange?: number;
+  incomeChangeAmount?: number;
+  expense?: number;
+  expenseChange?: number;
+  expenseChangeAmount?: number;
 }
 
 function AnimatedCounter({ value, duration = 1200 }: { value: number; duration?: number }) {
@@ -36,8 +43,8 @@ function AnimatedCounter({ value, duration = 1200 }: { value: number; duration?:
   return <>{formatCurrency(displayValue)}</>;
 }
 
-export function BalanceCard({ balance, change, changeAmount }: BalanceCardProps) {
-  const [hidden, setHidden] = useState(false);
+export function BalanceCard({ balance, change, changeAmount, income, incomeChange, incomeChangeAmount, expense, expenseChange, expenseChangeAmount }: BalanceCardProps) {
+  const { t } = useTranslation();
 
   return (
     <motion.div
@@ -46,20 +53,15 @@ export function BalanceCard({ balance, change, changeAmount }: BalanceCardProps)
       transition={{ duration: 0.5, delay: 0.2 }}
       className="bg-[var(--sk-card)] rounded-[20px] p-6 border border-[var(--sk-border)] shadow-sm hover:shadow-md transition-shadow"
     >
-      <div className="flex items-center justify-between mb-2">
-        <span className="text-sm text-[var(--sk-text-secondary)] font-medium">Total Balance</span>
-        <button
-          onClick={() => setHidden(!hidden)}
-          className="p-1.5 rounded-lg hover:bg-[var(--sk-border-light)] transition-colors text-[var(--sk-text-secondary)]"
-          aria-label={hidden ? 'Show balance' : 'Hide balance'}
-        >
-          {hidden ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-        </button>
+      <h3 className="text-lg font-semibold text-[var(--sk-text)] mb-4">{t('dashboard.accountOverview')}</h3>
+
+      <div className="mb-2">
+        <span className="text-sm text-[var(--sk-text-secondary)] font-medium">{t('dashboard.totalBalance')}</span>
       </div>
 
       <div className="mb-3">
-        <span className="text-[32px] font-bold text-[var(--sk-text)] tabular-nums tracking-tight">
-          {hidden ? '₴••••••' : <AnimatedCounter value={balance} />}
+        <span className="text-[28px] font-bold text-[var(--sk-text)] tabular-nums tracking-tight">
+          <AnimatedCounter value={balance} />
         </span>
       </div>
 
@@ -69,9 +71,45 @@ export function BalanceCard({ balance, change, changeAmount }: BalanceCardProps)
           +{change}%
         </span>
         <span className="text-xs text-[var(--sk-text-secondary)]">
-          +{formatCurrency(changeAmount)} compared to last month
+          +{formatCurrency(changeAmount)} {t('dashboard.comparedToLastMonth')}
         </span>
       </div>
+
+      {income !== undefined && (
+        <div className="mt-3 pt-3 border-t border-[var(--sk-border)]">
+          <p className="text-sm text-[var(--sk-text-secondary)] font-medium mb-1">{t('dashboard.totalIncome')}</p>
+          <p className="text-[24px] font-bold text-[var(--sk-text)] tabular-nums tracking-tight">+{formatCurrency(income)}</p>
+          {(incomeChange !== undefined && incomeChangeAmount !== undefined) && (
+            <div className="flex items-center gap-2 mt-1">
+              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-green-500/10 text-green-500 text-xs font-semibold">
+                <TrendingUp className="w-3 h-3" />
+                +{incomeChange}%
+              </span>
+              <span className="text-xs text-[var(--sk-text-secondary)]">
+                +{formatCurrency(incomeChangeAmount)} {t('dashboard.comparedToLastMonth')}
+              </span>
+            </div>
+          )}
+        </div>
+      )}
+
+      {expense !== undefined && (
+        <div className="mt-3 pt-3 border-t border-[var(--sk-border)]">
+          <p className="text-sm text-[var(--sk-text-secondary)] font-medium mb-1">{t('dashboard.totalExpense')}</p>
+          <p className="text-[24px] font-bold text-[var(--sk-text)] tabular-nums tracking-tight">-{formatCurrency(expense)}</p>
+          {(expenseChange !== undefined && expenseChangeAmount !== undefined) && (
+            <div className="flex items-center gap-2 mt-1">
+              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-red-500/10 text-red-500 text-xs font-semibold">
+                <TrendingUp className="w-3 h-3" />
+                {expenseChange}%
+              </span>
+              <span className="text-xs text-[var(--sk-text-secondary)]">
+                {expenseChange > 0 ? '+' : ''}{formatCurrency(expenseChangeAmount)} {t('dashboard.comparedToLastMonth')}
+              </span>
+            </div>
+          )}
+        </div>
+      )}
     </motion.div>
   );
 }

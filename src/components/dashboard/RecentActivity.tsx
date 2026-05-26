@@ -1,5 +1,6 @@
 import { motion } from 'framer-motion';
 import { Link } from 'react-router';
+import { useTranslation } from 'react-i18next';
 import { ArrowRight } from 'lucide-react';
 import { formatRelativeTime, formatCurrency } from '@/lib/utils/format';
 import type { Transaction } from '@/types';
@@ -40,6 +41,8 @@ const categoryIcons: Record<string, string> = {
 };
 
 export function RecentActivity({ transactions }: RecentActivityProps) {
+  const { t } = useTranslation();
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
@@ -48,15 +51,8 @@ export function RecentActivity({ transactions }: RecentActivityProps) {
       className="bg-[var(--sk-card)] rounded-[20px] p-6 border border-[var(--sk-border)] shadow-sm"
     >
       {/* Header */}
-      <div className="flex items-center justify-between mb-5">
-        <h3 className="text-lg font-semibold text-[var(--sk-text)]">Recent Activity</h3>
-        <Link
-          to="/transactions"
-          className="flex items-center gap-1 text-sm text-[#8B5CF6] hover:underline font-medium transition-colors"
-        >
-          See All
-          <ArrowRight className="w-3.5 h-3.5" />
-        </Link>
+      <div className="mb-5">
+        <h3 className="text-lg font-semibold text-[var(--sk-text)]">{t('dashboard.recentActivity')}</h3>
       </div>
 
       {/* List */}
@@ -92,17 +88,6 @@ export function RecentActivity({ transactions }: RecentActivityProps) {
                 </p>
               </div>
 
-              {/* Category pill */}
-              <span
-                className="hidden sm:inline-flex px-2 py-0.5 rounded-lg text-[11px] font-medium flex-shrink-0"
-                style={{
-                  backgroundColor: `${catColor}12`,
-                  color: catColor,
-                }}
-              >
-                {tx.category}
-              </span>
-
               {/* Amount */}
               <span
                 className={`text-[15px] font-semibold tabular-nums flex-shrink-0 ${
@@ -121,7 +106,7 @@ export function RecentActivity({ transactions }: RecentActivityProps) {
         to="/transactions"
         className="flex items-center justify-center gap-2 mt-4 py-3 text-sm font-medium text-[var(--sk-text-secondary)] hover:text-[#8B5CF6] bg-[var(--sk-border-light)] rounded-xl transition-colors"
       >
-        See all transactions
+        {t('dashboard.seeAllTransactions')}
         <ArrowRight className="w-3.5 h-3.5" />
       </Link>
     </motion.div>

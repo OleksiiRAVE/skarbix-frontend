@@ -98,7 +98,6 @@ export function TopBar() {
               <span className="text-[var(--sk-text-secondary)] font-medium">{rate.flag}</span>
               <div className="flex flex-col leading-none">
                 <span className="text-[var(--sk-text)] font-semibold text-[11px]">{rate.sell.toFixed(2)}</span>
-                <span className="text-[var(--sk-text-secondary)] text-[9px]">{rate.pair}</span>
               </div>
               {rate.trend === 'up' ? (
                 <TrendingUp className="w-3 h-3 text-green-500" />
@@ -167,9 +166,7 @@ export function TopBar() {
             >
               <Bell className="w-4 h-4" />
               {unreadCount > 0 && (
-                <span className="absolute top-1 right-1 w-4 h-4 bg-red-500 text-white text-[9px] font-bold rounded-full flex items-center justify-center">
-                  {unreadCount}
-                </span>
+                <span className="absolute -top-0.5 -right-0.5 w-2 h-2 bg-red-500 rounded-full" />
               )}
             </button>
           </PopoverTrigger>

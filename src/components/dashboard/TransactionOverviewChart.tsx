@@ -1,9 +1,10 @@
 import { motion } from 'framer-motion';
+import { useTranslation } from 'react-i18next';
 import {
   LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
 } from 'recharts';
-import { TrendingUp, TrendingDown } from 'lucide-react';
-import { formatCurrency } from '@/lib/utils/format';
+import { Tooltip as UITooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip';
+import { Info } from 'lucide-react';
 import type { TransactionOverviewData } from '@/types';
 import type { TooltipProps } from 'recharts';
 
@@ -26,8 +27,7 @@ interface TransactionOverviewChartProps {
 }
 
 export function TransactionOverviewChart({ data }: TransactionOverviewChartProps) {
-  const totalCurrent = data.reduce((sum, d) => sum + d.current, 0);
-  const totalPrevious = data.reduce((sum, d) => sum + d.previous, 0);
+  const { t } = useTranslation();
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
@@ -36,43 +36,18 @@ export function TransactionOverviewChart({ data }: TransactionOverviewChartProps
       className="bg-[var(--sk-card)] rounded-[20px] p-6 border border-[var(--sk-border)] shadow-sm"
     >
       {/* Header */}
-      <div className="flex items-center justify-between mb-6">
-        <h3 className="text-lg font-semibold text-[var(--sk-text)]">Transaction Overview</h3>
-        <button className="flex items-center gap-1.5 px-3 py-2 text-xs font-medium text-[var(--sk-text-secondary)] bg-[var(--sk-border-light)] rounded-full hover:bg-[var(--sk-border-light)] transition-colors">
-          Monthly
-        </button>
-      </div>
-
-      {/* Stats */}
-      <div className="grid grid-cols-2 gap-4 mb-6">
-        <div className="bg-[var(--sk-border-light)] rounded-2xl p-4">
-          <div className="flex items-center gap-2 mb-1">
-            <TrendingUp className="w-3.5 h-3.5 text-green-500" />
-            <span className="text-[11px] font-medium text-[var(--sk-text-secondary)] uppercase tracking-wide">Total Payment</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <span className="text-lg font-bold text-[var(--sk-text)] tabular-nums">
-              {formatCurrency(totalCurrent)}
-            </span>
-            <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full bg-green-500/10 text-green-500 text-[10px] font-semibold">
-              +14.51%
-            </span>
-          </div>
-        </div>
-        <div className="bg-[var(--sk-border-light)] rounded-2xl p-4">
-          <div className="flex items-center gap-2 mb-1">
-            <TrendingDown className="w-3.5 h-3.5 text-amber-500" />
-            <span className="text-[11px] font-medium text-[var(--sk-text-secondary)] uppercase tracking-wide">Previous Period</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <span className="text-lg font-bold text-[var(--sk-text)] tabular-nums">
-              {formatCurrency(totalPrevious)}
-            </span>
-            <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full bg-amber-500/10 text-amber-500 text-[10px] font-semibold">
-              +8.22%
-            </span>
-          </div>
-        </div>
+      <div className="mb-4 flex items-center gap-2">
+        <h3 className="text-lg font-semibold text-[var(--sk-text)]">{t('dashboard.transactionOverview')}</h3>
+        <UITooltip>
+          <TooltipTrigger asChild>
+            <button className="p-1 rounded-full text-[var(--sk-text-secondary)] hover:text-[var(--sk-text)] hover:bg-[var(--sk-border-light)] transition-colors">
+              <Info className="w-4 h-4" />
+            </button>
+          </TooltipTrigger>
+          <TooltipContent side="top" className="max-w-[280px] text-xs">
+            {t('dashboard.transactionOverviewTooltip')}
+          </TooltipContent>
+        </UITooltip>
       </div>
 
       {/* Chart */}
@@ -87,7 +62,8 @@ export function TransactionOverviewChart({ data }: TransactionOverviewChartProps
               tick={{ fontSize: 10, fill: 'var(--sk-text-secondary)' }}
               tickFormatter={(v) => {
                 const d = new Date(v);
-                return d.getDate() === 1 || d.getDate() === 15 || d.getDate() === 30
+                const today = new Date().getDate();
+                return d.getDate() === 1 || d.getDate() === today
                   ? `${d.getDate()} May`
                   : '';
               }}

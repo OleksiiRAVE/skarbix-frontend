@@ -1,11 +1,12 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
+import { useTranslation } from 'react-i18next';
 import {
   AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceLine,
 } from 'recharts';
-import { Calendar, Maximize2 } from 'lucide-react';
 import { formatCurrencyShort } from '@/lib/utils/format';
-import type { CashFlowData } from '@/types';
+import { Tooltip as UITooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip';
+import { Info } from 'lucide-react';import type { CashFlowData } from '@/types';
 import type { TooltipProps } from 'recharts';
 
 function CashFlowTooltip({ active, payload, label }: TooltipProps<number, string>) {
@@ -21,12 +22,6 @@ function CashFlowTooltip({ active, payload, label }: TooltipProps<number, string
 }
 
 type TabKey = 'income' | 'expense' | 'savings';
-
-const tabs: { key: TabKey; label: string }[] = [
-  { key: 'income', label: 'Income' },
-  { key: 'expense', label: 'Expense' },
-  { key: 'savings', label: 'Savings' },
-];
 
 const tabColors: Record<TabKey, string> = {
   income: '#8B5CF6',
@@ -45,7 +40,14 @@ interface CashFlowChartProps {
 }
 
 export function CashFlowChart({ data }: CashFlowChartProps) {
+  const { t } = useTranslation();
   const [activeTab, setActiveTab] = useState<TabKey>('income');
+
+  const tabs: { key: TabKey; label: string }[] = [
+    { key: 'income', label: t('dashboard.income') },
+    { key: 'expense', label: t('dashboard.expense') },
+    { key: 'savings', label: t('dashboard.savings') },
+  ];
 
   const total = data.reduce((sum, d) => sum + d[activeTab], 0);
 
@@ -59,46 +61,44 @@ export function CashFlowChart({ data }: CashFlowChartProps) {
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h3 className="text-lg font-semibold text-[var(--sk-text)]">Cash Flow</h3>
+          <div className="flex items-center gap-2">
+            <h3 className="text-lg font-semibold text-[var(--sk-text)]">{t('dashboard.cashFlow')}</h3>
+            <UITooltip>
+              <TooltipTrigger asChild>
+                <button className="p-1 rounded-full text-[var(--sk-text-secondary)] hover:text-[var(--sk-text)] hover:bg-[var(--sk-border-light)] transition-colors">
+                  <Info className="w-4 h-4" />
+                </button>
+              </TooltipTrigger>
+              <TooltipContent side="top" className="max-w-[260px] text-xs">
+                {t('dashboard.cashFlowTooltip')}
+              </TooltipContent>
+            </UITooltip>
+          </div>
           <p className="text-[28px] font-bold text-[var(--sk-text)] tabular-nums mt-1">
             ₴{formatCurrencyShort(total)}
           </p>
         </div>
-        <div className="flex items-center gap-2">
-          <button className="flex items-center gap-1.5 px-3 py-2 text-xs font-medium text-[var(--sk-text-secondary)] bg-[var(--sk-border-light)] rounded-full hover:bg-[var(--sk-border-light)] transition-colors">
-            <Calendar className="w-3.5 h-3.5" />
-            Custom Date
-          </button>
-          <button className="flex items-center gap-1.5 px-3 py-2 text-xs font-medium text-[var(--sk-text-secondary)] bg-[var(--sk-border-light)] rounded-full hover:bg-[var(--sk-border-light)] transition-colors">
-            1Y
-          </button>
-          <button className="p-2 text-[var(--sk-text-secondary)] hover:bg-[var(--sk-border-light)] rounded-full transition-colors">
-            <Maximize2 className="w-4 h-4" />
-          </button>
+        <div className="flex gap-1 bg-[var(--sk-border-light)] rounded-full p-1 w-fit">
+          {tabs.map((tab) => (
+            <button
+              key={tab.key}
+              onClick={() => setActiveTab(tab.key)}
+              className={`relative px-5 py-2 text-xs font-medium rounded-full transition-all duration-200 ${
+                activeTab === tab.key ? 'text-white' : 'text-[var(--sk-text-secondary)] hover:text-[var(--sk-text)]'
+              }`}
+            >
+              {activeTab === tab.key && (
+                <motion.div
+                  layoutId="cashflowTab"
+                  className="absolute inset-0 rounded-full"
+                  style={{ backgroundColor: tabColors[tab.key] }}
+                  transition={{ type: 'spring', stiffness: 400, damping: 30 }}
+                />
+              )}
+              <span className="relative z-10">{tab.label}</span>
+            </button>
+          ))}
         </div>
-      </div>
-
-      {/* Tabs */}
-      <div className="flex gap-1 bg-[var(--sk-border-light)] rounded-full p-1 mb-6 w-fit">
-        {tabs.map((tab) => (
-          <button
-            key={tab.key}
-            onClick={() => setActiveTab(tab.key)}
-            className={`relative px-5 py-2 text-xs font-medium rounded-full transition-all duration-200 ${
-              activeTab === tab.key ? 'text-white' : 'text-[var(--sk-text-secondary)] hover:text-[var(--sk-text)]'
-            }`}
-          >
-            {activeTab === tab.key && (
-              <motion.div
-                layoutId="cashflowTab"
-                className="absolute inset-0 rounded-full"
-                style={{ backgroundColor: tabColors[tab.key] }}
-                transition={{ type: 'spring', stiffness: 400, damping: 30 }}
-              />
-            )}
-            <span className="relative z-10">{tab.label}</span>
-          </button>
-        ))}
       </div>
 
       {/* Chart */}

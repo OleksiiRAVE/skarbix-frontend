@@ -247,14 +247,18 @@ export const disconnectMonobank = async () => {
 };
 
 // Dashboard data
+const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+
 export const fetchCashFlow = async (): Promise<CashFlowData[]> => {
   await delay(400);
-  return mockCashFlowData.map((d) => ({ ...d }));
+  const currentMonth = new Date().getMonth();
+  return mockCashFlowData.filter((d) => monthNames.indexOf(d.month) <= currentMonth).map((d) => ({ ...d }));
 };
 
 export const fetchTransactionOverview = async (): Promise<TransactionOverviewData[]> => {
   await delay(400);
-  return mockTransactionOverviewData.map((d) => ({ ...d }));
+  const today = new Date().getDate();
+  return mockTransactionOverviewData.filter((d) => parseInt(d.date.split('-')[2]) <= today).map((d) => ({ ...d }));
 };
 
 // Analytics
