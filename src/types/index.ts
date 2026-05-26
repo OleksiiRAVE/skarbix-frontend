@@ -11,9 +11,11 @@ export interface Account {
   id: string;
   userId: string;
   name: string;
-  type: 'checking' | 'card' | 'savings' | 'investment';
+  type: 'cash' | 'bank' | 'card' | 'checking' | 'savings' | 'investment' | 'other';
   balance: number;
   currency: string;
+  color?: string;
+  icon?: string;
   number?: string;
   cardNumber?: string;
   expiryDate?: string;

@@ -19,12 +19,6 @@ const getUserId = async () => {
   return data.user?.id ?? null;
 };
 
-const toAccountType = (type: string): Account['type'] => {
-  if (type === 'bank' || type === 'cash' || type === 'other') return 'checking';
-  if (type === 'card' || type === 'savings' || type === 'investment') return type;
-  return 'checking';
-};
-
 const toAccount = (row: {
   id: string;
   user_id: string;
@@ -32,13 +26,19 @@ const toAccount = (row: {
   type: string;
   balance: number | string;
   currency: string;
+  color?: string | null;
+  icon?: string | null;
 }): Account => ({
   id: row.id,
   userId: row.user_id,
   name: row.name,
-  type: toAccountType(row.type),
+  type: ['cash', 'bank', 'card', 'checking', 'savings', 'investment', 'other'].includes(row.type)
+    ? row.type as Account['type']
+    : 'other',
   balance: Number(row.balance),
   currency: row.currency,
+  color: row.color || undefined,
+  icon: row.icon || undefined,
   isConnected: false,
 });
 
@@ -145,15 +145,75 @@ export const fetchAccounts = async () => {
   const userId = await getUserId();
   if (!userId) return [];
 
-  const { data, error } = await supabase
+  let response: {
+    data: {
+      id: string;
+      user_id: string;
+      name: string;
+      type: string;
+      balance: number | string;
+      currency: string;
+      color?: string | null;
+      icon?: string | null;
+    }[] | null;
+    error: { message: string } | null;
+  } = await supabase
     .from('accounts')
-    .select('id,user_id,name,type,balance,currency')
+    .select('id,user_id,name,type,balance,currency,color,icon')
     .eq('user_id', userId)
     .eq('is_archived', false)
     .order('created_at', { ascending: true });
 
-  if (error) throw error;
-  return data.map(toAccount);
+  if (response.error && (response.error.message.includes('color') || response.error.message.includes('icon'))) {
+    response = await supabase
+      .from('accounts')
+      .select('id,user_id,name,type,balance,currency')
+      .eq('user_id', userId)
+      .eq('is_archived', false)
+      .order('created_at', { ascending: true });
+  }
+
+  if (response.error) throw response.error;
+  return (response.data ?? []).map(toAccount);
+};
+
+export const createAccount = async (data: {
+  name: string;
+  type: Account['type'];
+  balance: number;
+  currency?: string;
+  color?: string;
+  icon?: string;
+}) => {
+  const userId = await getUserId();
+  if (!userId) throw new Error('Not signed in');
+
+  const payload = {
+    user_id: userId,
+    name: data.name,
+    type: data.type === 'checking' ? 'bank' : data.type,
+    balance: data.balance,
+    currency: data.currency || 'UAH',
+    color: data.color,
+    icon: data.icon,
+  };
+
+  const select = 'id,user_id,name,type,balance,currency,color,icon';
+  let response = await supabase.from('accounts').insert(payload).select(select).single();
+
+  if (response.error && (response.error.message.includes('color') || response.error.message.includes('icon'))) {
+    const { color, icon, ...legacyPayload } = payload;
+    void color;
+    void icon;
+    response = await supabase
+      .from('accounts')
+      .insert(legacyPayload)
+      .select('id,user_id,name,type,balance,currency')
+      .single();
+  }
+
+  if (response.error) throw response.error;
+  return toAccount(response.data);
 };
 
 // Transactions
