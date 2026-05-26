@@ -1,16 +1,17 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { motion } from 'framer-motion';
 import { toast } from 'sonner';
 import { useTranslation } from 'react-i18next';
 import {
   Plus, Search, Download, ChevronLeft, ChevronRight,
-  Eye, X,
+  Eye, X, SlidersHorizontal,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { TableSkeleton } from '@/components/skeletons';
 import { AddTransactionModal } from '@/components/transactions/AddTransactionModal';
+import { TransactionFilterSheet, type FilterState } from '@/components/transactions/TransactionFilterSheet';
 import { formatCurrency, formatDate } from '@/lib/utils/format';
 import { fetchTransactions } from '@/lib/mock-api/api';
 import { mockTransactions } from '@/lib/mock-api/data';
@@ -22,16 +23,27 @@ const CC: Record<string, string> = {
   'Income': '#10B981', 'Taxi': '#F97316', 'Groceries': '#84CC16', 'Subscriptions': '#6366F1',
 };
 
+const defaultFilters: FilterState = {
+  type: 'all',
+  accounts: [],
+  categories: [],
+  amountMin: '',
+  amountMax: '',
+  dateFrom: '',
+  dateTo: '',
+};
+
 export default function TransactionsPage() {
   const { t } = useTranslation();
   const [loading, setLoading] = useState(true);
   const [transactions, setTransactions] = useState<Transaction[]>([]);
-  const [total, setTotal] = useState(0);
   const [page] = useState(1);
   const [search, setSearch] = useState('');
   const [selectedTx, setSelectedTx] = useState<Transaction | null>(null);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [modalOpen, setModalOpen] = useState(false);
+  const [filterOpen, setFilterOpen] = useState(false);
+  const [filters, setFilters] = useState<FilterState>(defaultFilters);
 
   useEffect(() => {
     let mounted = true;
@@ -40,11 +52,9 @@ export default function TransactionsPage() {
         const res = await fetchTransactions({ limit: 10 });
         if (!mounted) return;
         setTransactions(res.transactions);
-        setTotal(res.total);
       } catch {
         if (mounted) {
           setTransactions(mockTransactions.slice(0, 10));
-          setTotal(mockTransactions.length);
         }
       } finally {
         if (mounted) setLoading(false);
@@ -59,18 +69,76 @@ export default function TransactionsPage() {
     try {
       const res = await fetchTransactions({ search: val, limit: 10 });
       setTransactions(res.transactions);
-      setTotal(res.total);
     } catch {
       const filtered = mockTransactions.filter((t) =>
         t.merchant.toLowerCase().includes(val.toLowerCase()) ||
         t.category.toLowerCase().includes(val.toLowerCase())
       );
       setTransactions(filtered.slice(0, 10));
-      setTotal(filtered.length);
     }
   };
 
-  const totalPages = Math.max(1, Math.ceil(total / 10));
+  const filteredTransactions = useMemo(() => {
+    let data = [...transactions];
+
+    // Search
+    if (search.trim()) {
+      const q = search.toLowerCase();
+      data = data.filter(
+        (tx) =>
+          tx.merchant.toLowerCase().includes(q) ||
+          tx.category.toLowerCase().includes(q)
+      );
+    }
+
+    // Type
+    if (filters.type !== 'all') {
+      data = data.filter((tx) => tx.type === filters.type);
+    }
+
+    // Accounts
+    if (filters.accounts.length > 0) {
+      data = data.filter((tx) => tx.accountId && filters.accounts.includes(tx.accountId));
+    }
+
+    // Categories
+    if (filters.categories.length > 0) {
+      data = data.filter((tx) => filters.categories.includes(tx.categoryId));
+    }
+
+    // Amount
+    if (filters.amountMin) {
+      const min = parseFloat(filters.amountMin);
+      data = data.filter((tx) => tx.amount >= min);
+    }
+    if (filters.amountMax) {
+      const max = parseFloat(filters.amountMax);
+      data = data.filter((tx) => tx.amount <= max);
+    }
+
+    // Date range
+    if (filters.dateFrom) {
+      const from = new Date(filters.dateFrom).getTime();
+      data = data.filter((tx) => new Date(tx.date).getTime() >= from);
+    }
+    if (filters.dateTo) {
+      const to = new Date(filters.dateTo).getTime();
+      data = data.filter((tx) => new Date(tx.date).getTime() <= to);
+    }
+
+    return data;
+  }, [transactions, search, filters]);
+
+  const filteredTotal = filteredTransactions.length;
+  const totalPages = Math.max(1, Math.ceil(filteredTotal / 10));
+
+  const activeFilterCount = [
+    filters.type !== 'all',
+    filters.accounts.length > 0,
+    filters.categories.length > 0,
+    filters.amountMin || filters.amountMax,
+    filters.dateFrom || filters.dateTo,
+  ].filter(Boolean).length;
 
   return (
     <div className="space-y-4 sm:space-y-6">
@@ -94,11 +162,25 @@ export default function TransactionsPage() {
         </div>
       </motion.div>
 
-      {/* Search */}
+      {/* Search + Filter */}
       <div className="bg-[var(--sk-card)] rounded-[16px] sm:rounded-[20px] p-3 sm:p-4 border border-[var(--sk-border)] shadow-sm">
-        <div className="relative max-w-md">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--sk-text-secondary)]" />
-          <Input placeholder={t('transactions.searchPlaceholder')} value={search} onChange={(e) => handleSearch(e.target.value)} className="h-10 sm:h-11 pl-9 rounded-full border-[var(--sk-border)] bg-transparent text-[var(--sk-text)]" />
+        <div className="flex items-center gap-2 sm:gap-3">
+          <div className="relative flex-1 max-w-md">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--sk-text-secondary)]" />
+            <Input placeholder={t('transactions.searchPlaceholder')} value={search} onChange={(e) => handleSearch(e.target.value)} className="h-10 sm:h-11 pl-9 rounded-full border-[var(--sk-border)] bg-transparent text-[var(--sk-text)]" />
+          </div>
+          <button
+            onClick={() => setFilterOpen(true)}
+            className="relative flex items-center gap-1.5 h-10 sm:h-11 px-3 sm:px-4 rounded-full border border-[var(--sk-border)] text-[var(--sk-text-secondary)] hover:text-[var(--sk-text)] hover:bg-[var(--sk-border-light)] transition-all text-xs sm:text-sm"
+          >
+            <SlidersHorizontal className="w-4 h-4" />
+            <span className="hidden sm:inline">{t('filter.title')}</span>
+            {activeFilterCount > 0 && (
+              <span className="absolute -top-1.5 -right-1.5 min-w-[18px] h-[18px] px-1 bg-[#8B5CF6] text-white text-[10px] font-bold rounded-full flex items-center justify-center">
+                {activeFilterCount}
+              </span>
+            )}
+          </button>
         </div>
       </div>
 
@@ -117,7 +199,7 @@ export default function TransactionsPage() {
                   <th className="text-right px-4 sm:px-6 py-3 text-[11px] font-semibold text-[var(--sk-text-secondary)] uppercase tracking-wider">{t('transactions.amount')}</th>
                   <th className="text-right px-4 sm:px-6 py-3 text-[11px] font-semibold text-[var(--sk-text-secondary)] uppercase tracking-wider hidden sm:table-cell">{t('transactions.actions')}</th>
                 </tr></thead>
-                <tbody>{transactions.map((tx) => {
+                <tbody>{filteredTransactions.map((tx) => {
                   const c = CC[tx.category] || '#8B5CF6';
                   return (
                     <tr key={tx.id} className="border-b border-[var(--sk-border-light)] hover:bg-[var(--sk-border-light)]/50 transition-colors cursor-pointer group" onClick={() => { setSelectedTx(tx); setDrawerOpen(true); }}>
@@ -132,7 +214,7 @@ export default function TransactionsPage() {
               </table>
             </div>
             <div className="flex flex-col sm:flex-row items-center justify-between gap-3 px-4 sm:px-6 py-4 border-t border-[var(--sk-border)]">
-              <p className="text-xs text-[var(--sk-text-secondary)] order-2 sm:order-1">{t('transactions.showing', { from: ((page - 1) * 10) + 1, to: Math.min(page * 10, total), total })}</p>
+              <p className="text-xs text-[var(--sk-text-secondary)] order-2 sm:order-1">{t('transactions.showing', { from: ((page - 1) * 10) + 1, to: Math.min(page * 10, filteredTotal), total: filteredTotal })}</p>
               <div className="flex items-center gap-1 order-1 sm:order-2">
                 <button disabled={page === 1} className="p-2 rounded-lg hover:bg-[var(--sk-border-light)] disabled:opacity-30 text-[var(--sk-text-secondary)]"><ChevronLeft className="w-4 h-4" /></button>
                 {Array.from({ length: Math.min(totalPages, 5) }).map((_, i) => <button key={i} className={`w-8 h-8 rounded-lg text-xs font-medium ${page === i + 1 ? 'bg-[#8B5CF6] text-white' : 'text-[var(--sk-text-secondary)] hover:bg-[var(--sk-border-light)]'}`}>{i + 1}</button>)}
@@ -144,6 +226,14 @@ export default function TransactionsPage() {
       </div>
 
       <AddTransactionModal open={modalOpen} onOpenChange={setModalOpen} />
+
+      <TransactionFilterSheet
+        open={filterOpen}
+        onOpenChange={setFilterOpen}
+        filters={filters}
+        onApply={setFilters}
+        onReset={() => setFilters(defaultFilters)}
+      />
 
       {/* Detail Sheet */}
       <Sheet open={drawerOpen} onOpenChange={setDrawerOpen}>

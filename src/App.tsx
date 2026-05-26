@@ -1,5 +1,6 @@
 import { Routes, Route, Navigate } from 'react-router';
 import { AppShell } from '@/components/layout/AppShell';
+import { RedirectAuthed, RequireAuth } from '@/components/auth/AuthRoute';
 
 // Dashboard (app) pages
 import DashboardPage from '@/app/dashboard/page';
@@ -67,7 +68,11 @@ function AppPage({ children }: { children: React.ReactNode }) {
     return <Navigate to="/" replace />;
   }
 
-  return <AppLayout>{children}</AppLayout>;
+  return (
+    <RequireAuth>
+      <AppLayout>{children}</AppLayout>
+    </RequireAuth>
+  );
 }
 
 function AppSurface({ children }: { children: React.ReactNode }) {
@@ -85,8 +90,8 @@ export default function App() {
       <Route path="/landing" element={<LandingEntry />} />
 
       {/* Auth & onboarding - no sidebar */}
-      <Route path="/auth" element={<AppSurface><AuthPage /></AppSurface>} />
-      <Route path="/onboarding" element={<AppSurface><OnboardingPage /></AppSurface>} />
+      <Route path="/auth" element={<AppSurface><RedirectAuthed><AuthPage /></RedirectAuthed></AppSurface>} />
+      <Route path="/onboarding" element={<AppSurface><RequireAuth><OnboardingPage /></RequireAuth></AppSurface>} />
 
       {/* Static pages - no sidebar */}
       <Route path="/help" element={<HelpCenterPage />} />

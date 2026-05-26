@@ -24,6 +24,7 @@ export interface Account {
 export interface Transaction {
   id: string;
   userId: string;
+  accountId?: string;
   amount: number;
   type: 'income' | 'expense';
   category: string;

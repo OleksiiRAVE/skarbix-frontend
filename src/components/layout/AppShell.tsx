@@ -1,6 +1,5 @@
 import { useEffect } from 'react';
 import { useLocation } from 'react-router';
-import { Toaster } from '@/components/ui/sonner';
 import { Sidebar } from './Sidebar';
 import { TopBar } from './TopBar';
 import { useAppStore } from '@/store';
@@ -24,19 +23,6 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
   return (
     <div className="min-h-screen bg-[var(--sk-bg)] text-[var(--sk-text)] transition-colors duration-300 flex">
-      <Toaster
-        position="top-right"
-        toastOptions={{
-          style: {
-            background: 'var(--sk-card)',
-            color: 'var(--sk-text)',
-            border: '1px solid var(--sk-border)',
-            borderRadius: '16px',
-            fontSize: '13px',
-            fontWeight: 500,
-          },
-        }}
-      />
       <Sidebar />
       <div className="flex-1 flex flex-col min-h-screen lg:ml-[220px]">
         <TopBar />

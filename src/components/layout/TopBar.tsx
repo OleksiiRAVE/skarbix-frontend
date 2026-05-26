@@ -1,5 +1,6 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useLocation, useNavigate } from 'react-router';
 import { motion } from 'framer-motion';
 import {
   Bell, Moon, Sun, ChevronDown, LogOut, User, Settings,
@@ -14,6 +15,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from '@/components/ui/popover';
+import { useAuth } from '@/lib/auth/AuthProvider';
 
 // Circular flag SVGs with clipPath
 function FlagUA({ className = 'w-4 h-4' }: { className?: string }) {
@@ -56,6 +58,9 @@ const exchangeRates = [
 
 export function TopBar() {
   const { t, i18n } = useTranslation();
+  const location = useLocation();
+  const navigate = useNavigate();
+  const { signOut } = useAuth();
   const theme = useAppStore((s) => s.theme);
   const language = useAppStore((s) => s.language);
   const toggleTheme = useAppStore((s) => s.toggleTheme);
@@ -64,6 +69,32 @@ export function TopBar() {
   const [langOpen, setLangOpen] = useState(false);
 
   const unreadCount = mockNotifications.filter((n) => !n.read).length;
+
+  const handleLogout = async () => {
+    await signOut();
+    navigate('/auth', { replace: true });
+  };
+
+  const pageTitleKey = useMemo(() => {
+    const map: Record<string, string> = {
+      '/dashboard': 'dashboard.title',
+      '/transactions': 'transactions.title',
+      '/accounts': 'sidebar.accounts',
+      '/categories': 'sidebar.categories',
+      '/debts': 'debts.title',
+      '/subscriptions': 'sidebar.subscriptions',
+      '/analytics': 'sidebar.analytics',
+      '/capital': 'sidebar.capital',
+      '/calendar': 'sidebar.calendar',
+      '/budgets': 'sidebar.budget',
+      '/goals': 'sidebar.goals',
+      '/ai-assistant': 'sidebar.aiAssistant',
+      '/payments': 'payments.title',
+      '/history': 'history.title',
+      '/settings': 'sidebar.settings',
+    };
+    return map[location.pathname] || 'dashboard.title';
+  }, [location.pathname]);
 
   const handleLangChange = (lang: 'uk' | 'en') => {
     setLanguage(lang);
@@ -85,7 +116,7 @@ export function TopBar() {
       {/* Left: Page title area */}
       <div className="flex items-center gap-2">
         <h1 className="text-sm sm:text-base font-semibold text-[var(--sk-text)] hidden sm:block">
-          {t('dashboard.title')}
+          {t(pageTitleKey)}
         </h1>
       </div>
 
@@ -161,13 +192,15 @@ export function TopBar() {
         <Popover>
           <PopoverTrigger asChild>
             <button
-              className="relative p-2 rounded-xl text-[var(--sk-text-secondary)] hover:text-[var(--sk-text)] hover:bg-[var(--sk-border-light)] transition-all"
+              className="p-2 rounded-xl text-[var(--sk-text-secondary)] hover:text-[var(--sk-text)] hover:bg-[var(--sk-border-light)] transition-all"
               title={t('topbar.notifications')}
             >
-              <Bell className="w-4 h-4" />
-              {unreadCount > 0 && (
-                <span className="absolute -top-0.5 -right-0.5 w-2 h-2 bg-red-500 rounded-full" />
-              )}
+              <span className="relative inline-block">
+                <Bell className="w-4 h-4" />
+                {unreadCount > 0 && (
+                  <span className="absolute -top-0.5 -right-0.5 w-2 h-2 bg-red-500 rounded-full" />
+                )}
+              </span>
             </button>
           </PopoverTrigger>
           <PopoverContent
@@ -240,7 +273,7 @@ export function TopBar() {
                 {t('topbar.appearance')}
               </button>
               <div className="border-t my-1" style={{ borderColor: 'var(--sk-border)' }} />
-              <button className="flex items-center gap-2.5 w-full px-3 py-2 rounded-xl text-sm text-red-500 hover:bg-red-500/10 transition-all">
+              <button onClick={handleLogout} className="flex items-center gap-2.5 w-full px-3 py-2 rounded-xl text-sm text-red-500 hover:bg-red-500/10 transition-all">
                 <LogOut className="w-4 h-4" />
                 {t('topbar.logout')}
               </button>

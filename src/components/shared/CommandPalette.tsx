@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router';
 import { Search, LayoutDashboard, Receipt, BarChart3, PiggyBank, Users, Sparkles, CreditCard, History, Settings, LogOut } from 'lucide-react';
+import { useAuth } from '@/lib/auth/AuthProvider';
 
 interface CommandItem {
   id: string;
@@ -17,6 +18,7 @@ export function CommandPalette() {
   const [selectedIndex, setSelectedIndex] = useState(0);
   const inputRef = useRef<HTMLInputElement>(null);
   const navigate = useNavigate();
+  const { signOut } = useAuth();
 
   const closePalette = () => {
     setOpen(false);
@@ -34,7 +36,7 @@ export function CommandPalette() {
     { id: 'payments', label: 'Payments', icon: CreditCard, action: () => { navigate('/payments'); closePalette(); } },
     { id: 'history', label: 'History', icon: History, action: () => { navigate('/history'); closePalette(); } },
     { id: 'settings', label: 'Settings', shortcut: 'G S', icon: Settings, action: () => { navigate('/settings'); closePalette(); } },
-    { id: 'logout', label: 'Logout', icon: LogOut, action: () => { navigate('/auth'); closePalette(); } },
+    { id: 'logout', label: 'Logout', icon: LogOut, action: () => { void signOut().then(() => navigate('/auth', { replace: true })); closePalette(); } },
   ];
 
   const filtered = query.trim()
