@@ -1,8 +1,12 @@
 import { motion } from 'framer-motion';
 import { ArrowUpRight, ArrowDownLeft, MoreHorizontal } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { useAppStore } from '@/store';
 
 export function BankCard() {
+  const user = useAppStore((s) => s.user);
+  const cardHolder = user?.name || 'Skarbix User';
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
@@ -65,7 +69,7 @@ export function BankCard() {
               Card Holder
             </p>
             <p className="text-xs sm:text-sm font-semibold tracking-wide text-white uppercase">
-              Artem Koval
+              {cardHolder}
             </p>
           </div>
           <div className="text-right">

@@ -9,7 +9,7 @@ import { TransactionOverviewChart } from '@/components/dashboard/TransactionOver
 import { RecentActivity } from '@/components/dashboard/RecentActivity';
 import { AddTransactionModal } from '@/components/transactions/AddTransactionModal';
 import { DashboardSkeleton } from '@/components/skeletons';
-import { getGreeting } from '@/lib/utils/format';
+import { useAppStore } from '@/store';
 import {
   fetchAccounts,
   fetchTransactions,
@@ -18,8 +18,18 @@ import {
 } from '@/lib/mock-api/api';
 import type { Account, Transaction, CashFlowData, TransactionOverviewData } from '@/types';
 
+const getGreetingText = (t: (key: string) => string): string => {
+  const hour = new Date().getHours();
+  if (hour < 6) return t('dashboard.greetingNight');
+  if (hour < 12) return t('dashboard.greetingMorning');
+  if (hour < 18) return t('dashboard.greetingAfternoon');
+  return t('dashboard.greetingEvening');
+};
+
 export default function DashboardPage() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+  const user = useAppStore((s) => s.user);
+  const userName = user?.name?.split(' ')[0] || 'there';
   const [loading, setLoading] = useState(true);
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [transactions, setTransactions] = useState<Transaction[]>([]);
@@ -55,7 +65,9 @@ export default function DashboardPage() {
   }
 
   const primaryAccount = accounts.find((a) => a.type === 'card') || accounts[0];
-  const balance = primaryAccount?.balance || 124580.40;
+  const balance = primaryAccount?.balance || 0;
+  const income = transactions.filter(t => t.type === 'income').reduce((s, t) => s + t.amount, 0);
+  const expense = transactions.filter(t => t.type === 'expense').reduce((s, t) => s + t.amount, 0);
 
   return (
     <div className="space-y-6 sm:space-y-8">
@@ -67,8 +79,8 @@ export default function DashboardPage() {
         className="flex items-center justify-between gap-4"
       >
         <div className="flex-1 min-w-0">
-          <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-[var(--sk-text)] tracking-tight">
-            {getGreeting()}, Artem 👋
+          <h1 key={i18n.language} className="text-2xl sm:text-3xl lg:text-4xl font-bold text-[var(--sk-text)] tracking-tight">
+            {getGreetingText(t)}, {userName} 👋
           </h1>
           <p className="text-[var(--sk-text-secondary)] mt-1.5 text-sm sm:text-[15px]">
             {t('dashboard.subtitle')}
@@ -88,14 +100,14 @@ export default function DashboardPage() {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
           <BalanceCard
             balance={balance}
-            change={4.51}
-            changeAmount={4499}
-            income={transactions.filter(t => t.type === 'income').reduce((s, t) => s + t.amount, 0)}
-            incomeChange={12.5}
-            incomeChangeAmount={15200}
-            expense={transactions.filter(t => t.type === 'expense').reduce((s, t) => s + t.amount, 0)}
-            expenseChange={-3.2}
-            expenseChangeAmount={2100}
+            change={0}
+            changeAmount={0}
+            income={income}
+            incomeChange={0}
+            incomeChangeAmount={0}
+            expense={expense}
+            expenseChange={0}
+            expenseChangeAmount={0}
           />
           <CashFlowChart data={cashFlow} />
         </div>

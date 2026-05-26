@@ -29,6 +29,10 @@ export default function SettingsPage() {
   const [showPwd, setShowPwd] = useState(false);
   const theme = useAppStore((s) => s.theme);
   const setTheme = useAppStore((s) => s.setTheme);
+  const user = useAppStore((s) => s.user);
+  const displayName = user?.name || 'Skarbix User';
+  const displayEmail = user?.email || '';
+  const initial = displayName.charAt(0).toUpperCase();
 
   return (
     <div className="space-y-4 sm:space-y-6">
@@ -79,21 +83,21 @@ export default function SettingsPage() {
               <h3 className="text-base sm:text-lg font-semibold text-[var(--sk-text)]">Profile</h3>
               <div className="flex items-center gap-3 sm:gap-4 mb-4 sm:mb-6">
                 <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-[#8B5CF6] flex items-center justify-center text-white text-xl sm:text-2xl font-bold">
-                  A
+                  {initial}
                 </div>
                 <div>
-                  <p className="text-sm sm:text-base font-medium text-[var(--sk-text)]">Artem Koval</p>
-                  <p className="text-xs sm:text-sm text-[var(--sk-text-secondary)]">artem@skarbix.app</p>
+                  <p className="text-sm sm:text-base font-medium text-[var(--sk-text)]">{displayName}</p>
+                  <p className="text-xs sm:text-sm text-[var(--sk-text-secondary)]">{displayEmail}</p>
                 </div>
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                 <div className="space-y-1.5">
                   <Label className="text-xs text-[var(--sk-text-secondary)]">Full Name</Label>
-                  <Input defaultValue="Artem Koval" className="h-10 sm:h-11 rounded-xl border-[var(--sk-border)] text-sm" />
+                  <Input value={displayName} readOnly className="h-10 sm:h-11 rounded-xl border-[var(--sk-border)] text-sm" />
                 </div>
                 <div className="space-y-1.5">
                   <Label className="text-xs text-[var(--sk-text-secondary)]">Email</Label>
-                  <Input defaultValue="artem@skarbix.app" className="h-10 sm:h-11 rounded-xl border-[var(--sk-border)] text-sm" />
+                  <Input value={displayEmail} readOnly className="h-10 sm:h-11 rounded-xl border-[var(--sk-border)] text-sm" />
                 </div>
               </div>
               <div className="space-y-1.5">
@@ -102,8 +106,8 @@ export default function SettingsPage() {
                   UAH (₴) — Ukrainian Hryvnia
                 </div>
               </div>
-              <Button className="h-9 sm:h-10 bg-[#8B5CF6] hover:bg-[#7C3AED] text-white rounded-full px-4 sm:px-6 text-xs sm:text-sm">
-                Save Changes
+              <Button disabled className="h-9 sm:h-10 bg-[#8B5CF6] hover:bg-[#7C3AED] text-white rounded-full px-4 sm:px-6 text-xs sm:text-sm disabled:opacity-60">
+                Synced from your account
               </Button>
             </div>
           )}

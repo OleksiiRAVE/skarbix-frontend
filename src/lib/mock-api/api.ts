@@ -1,17 +1,138 @@
 import {
-  mockUser, mockAccounts, mockTransactions, mockCategories,
-  mockBudgets, mockDebts, mockAIMessages, mockNotifications,
+  mockUser,
+  mockAIMessages, mockNotifications,
   mockMonobankConnection, mockCashFlowData, mockTransactionOverviewData,
   mockAnalyticsData, mockHistoryEvents,
 } from './data';
+import { supabase } from '@/lib/supabase/client';
 import type {
-  Transaction, Category, Budget, Debt, AIMessage,
+  Account, Transaction, Category, Budget, Debt, AIMessage,
   Notification, MonobankConnection, CashFlowData,
   TransactionOverviewData, AnalyticsData, HistoryEvent,
   CapitalData,
 } from '@/types';
 
 const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+
+const getUserId = async () => {
+  const { data } = await supabase.auth.getUser();
+  return data.user?.id ?? null;
+};
+
+const toAccountType = (type: string): Account['type'] => {
+  if (type === 'bank' || type === 'cash' || type === 'other') return 'checking';
+  if (type === 'card' || type === 'savings' || type === 'investment') return type;
+  return 'checking';
+};
+
+const toAccount = (row: {
+  id: string;
+  user_id: string;
+  name: string;
+  type: string;
+  balance: number | string;
+  currency: string;
+}): Account => ({
+  id: row.id,
+  userId: row.user_id,
+  name: row.name,
+  type: toAccountType(row.type),
+  balance: Number(row.balance),
+  currency: row.currency,
+  isConnected: false,
+});
+
+const toCategory = (row: {
+  id: string;
+  name: string;
+  color: string | null;
+  icon: string | null;
+  is_system: boolean;
+}): Category => ({
+  id: row.id,
+  name: row.name,
+  icon: row.icon || 'Tag',
+  color: row.color || '#8B5CF6',
+  type: row.is_system ? 'system' : 'custom',
+  monthlySpent: 0,
+});
+
+const toTransaction = (row: {
+  id: string;
+  user_id: string;
+  account_id: string | null;
+  category_id: string | null;
+  type: string;
+  amount: number | string;
+  currency: string;
+  merchant: string | null;
+  notes: string | null;
+  occurred_at: string;
+  source: string;
+  categories?: { name: string | null } | { name: string | null }[] | null;
+}): Transaction => ({
+  id: row.id,
+  userId: row.user_id,
+  accountId: row.account_id || undefined,
+  amount: Number(row.amount),
+  type: row.type === 'income' ? 'income' : 'expense',
+  category: (Array.isArray(row.categories) ? row.categories[0]?.name : row.categories?.name) || 'Uncategorized',
+  categoryId: row.category_id || 'uncategorized',
+  merchant: row.merchant || 'Manual transaction',
+  description: row.notes || undefined,
+  date: row.occurred_at,
+  source: row.source === 'monobank' || row.source === 'ai' ? row.source : 'manual',
+  notes: row.notes || undefined,
+  createdAt: row.occurred_at,
+  updatedAt: row.occurred_at,
+});
+
+const toBudget = (row: {
+  id: string;
+  user_id: string;
+  category_id: string | null;
+  name: string;
+  amount: number | string;
+  period: 'weekly' | 'monthly' | 'yearly';
+  starts_on: string;
+  categories?: { name: string | null; color: string | null } | { name: string | null; color: string | null }[] | null;
+}): Budget => ({
+  id: row.id,
+  userId: row.user_id,
+  categoryId: row.category_id || 'uncategorized',
+  categoryName: (Array.isArray(row.categories) ? row.categories[0]?.name : row.categories?.name) || row.name,
+  categoryColor: (Array.isArray(row.categories) ? row.categories[0]?.color : row.categories?.color) || '#8B5CF6',
+  amount: Number(row.amount),
+  spent: 0,
+  period: row.period === 'weekly' ? 'weekly' : 'monthly',
+  month: new Date(row.starts_on).getMonth() + 1,
+  year: new Date(row.starts_on).getFullYear(),
+  alertThreshold: 80,
+});
+
+const toDebt = (row: {
+  id: string;
+  user_id: string;
+  person_name: string;
+  direction: 'owed_to_me' | 'i_owe';
+  amount: number | string;
+  currency: string;
+  status: 'pending' | 'overdue' | 'paid';
+  due_date: string | null;
+  notes: string | null;
+  created_at: string;
+}): Debt => ({
+  id: row.id,
+  userId: row.user_id,
+  personName: row.person_name,
+  direction: row.direction,
+  amount: Number(row.amount),
+  currency: row.currency,
+  status: row.status,
+  dueDate: row.due_date || undefined,
+  notes: row.notes || undefined,
+  createdAt: row.created_at,
+});
 
 // User
 export const fetchUser = async () => {
@@ -21,8 +142,18 @@ export const fetchUser = async () => {
 
 // Accounts
 export const fetchAccounts = async () => {
-  await delay(300);
-  return mockAccounts.map((a) => ({ ...a }));
+  const userId = await getUserId();
+  if (!userId) return [];
+
+  const { data, error } = await supabase
+    .from('accounts')
+    .select('id,user_id,name,type,balance,currency')
+    .eq('user_id', userId)
+    .eq('is_archived', false)
+    .order('created_at', { ascending: true });
+
+  if (error) throw error;
+  return data.map(toAccount);
 };
 
 // Transactions
@@ -34,155 +165,207 @@ export const fetchTransactions = async (filters?: {
   page?: number;
   limit?: number;
 }): Promise<{ transactions: Transaction[]; total: number }> => {
-  await delay(500);
-  let result = [...mockTransactions];
-
-  if (filters?.search) {
-    const s = filters.search.toLowerCase();
-    result = result.filter(
-      (t) =>
-        t.merchant.toLowerCase().includes(s) ||
-        t.description?.toLowerCase().includes(s) ||
-        t.category.toLowerCase().includes(s)
-    );
-  }
-  if (filters?.category) {
-    result = result.filter((t) => t.categoryId === filters.category);
-  }
-  if (filters?.source) {
-    result = result.filter((t) => t.source === filters.source);
-  }
-  if (filters?.type) {
-    result = result.filter((t) => t.type === filters.type);
-  }
-
-  const total = result.length;
   const page = filters?.page || 1;
   const limit = filters?.limit || 10;
-  result = result.slice((page - 1) * limit, page * limit);
+  const from = (page - 1) * limit;
+  const to = from + limit - 1;
+  const userId = await getUserId();
+  if (!userId) return { transactions: [], total: 0 };
 
-  return { transactions: result, total };
+  let query = supabase
+    .from('transactions')
+    .select('id,user_id,account_id,category_id,type,amount,currency,merchant,notes,occurred_at,source,categories(name)', { count: 'exact' })
+    .eq('user_id', userId)
+    .order('occurred_at', { ascending: false })
+    .range(from, to);
+
+  if (filters?.search) {
+    query = query.or(`merchant.ilike.%${filters.search}%,notes.ilike.%${filters.search}%`);
+  }
+  if (filters?.category) {
+    query = query.eq('category_id', filters.category);
+  }
+  if (filters?.source) {
+    query = query.eq('source', filters.source);
+  }
+  if (filters?.type && filters.type !== 'all') {
+    query = query.eq('type', filters.type);
+  }
+
+  const { data, error, count } = await query;
+  if (error) throw error;
+
+  return { transactions: data.map(toTransaction), total: count ?? 0 };
 };
 
 export const createTransaction = async (data: Partial<Transaction>) => {
-  await delay(600);
-  const newTx: Transaction = {
-    id: `t${Date.now()}`,
-    userId: '1',
-    amount: data.amount || 0,
-    type: data.type || 'expense',
-    category: data.category || 'Uncategorized',
-    categoryId: data.categoryId || 'cat1',
-    merchant: data.merchant || 'Unknown',
-    description: data.description || '',
-    date: data.date || new Date().toISOString(),
-    source: data.source || 'manual',
-    notes: data.notes || '',
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
-  };
-  mockTransactions.unshift(newTx);
-  return newTx;
+  const userId = await getUserId();
+  if (!userId) throw new Error('Not signed in');
+
+  const { data: inserted, error } = await supabase
+    .from('transactions')
+    .insert({
+      user_id: userId,
+      account_id: data.accountId,
+      category_id: data.categoryId === 'uncategorized' ? null : data.categoryId,
+      type: data.type || 'expense',
+      amount: data.amount || 0,
+      merchant: data.merchant || 'Manual transaction',
+      notes: data.notes || data.description || null,
+      occurred_at: data.date || new Date().toISOString(),
+      source: data.source || 'manual',
+    })
+    .select('id,user_id,account_id,category_id,type,amount,currency,merchant,notes,occurred_at,source,categories(name)')
+    .single();
+
+  if (error) throw error;
+  return toTransaction(inserted);
 };
 
 export const updateTransaction = async (id: string, data: Partial<Transaction>) => {
-  await delay(400);
-  const idx = mockTransactions.findIndex((t) => t.id === id);
-  if (idx >= 0) {
-    mockTransactions[idx] = { ...mockTransactions[idx], ...data, updatedAt: new Date().toISOString() };
-    return mockTransactions[idx];
-  }
-  throw new Error('Transaction not found');
+  const { data: updated, error } = await supabase
+    .from('transactions')
+    .update({
+      type: data.type,
+      amount: data.amount,
+      merchant: data.merchant,
+      notes: data.notes || data.description,
+      occurred_at: data.date,
+    })
+    .eq('id', id)
+    .select('id,user_id,account_id,category_id,type,amount,currency,merchant,notes,occurred_at,source,categories(name)')
+    .single();
+
+  if (error) throw error;
+  return toTransaction(updated);
 };
 
 export const deleteTransaction = async (id: string) => {
-  await delay(400);
-  const idx = mockTransactions.findIndex((t) => t.id === id);
-  if (idx >= 0) {
-    mockTransactions.splice(idx, 1);
-    return true;
-  }
-  throw new Error('Transaction not found');
+  const { error } = await supabase.from('transactions').delete().eq('id', id);
+  if (error) throw error;
+  return true;
 };
 
 // Categories
 export const fetchCategories = async (): Promise<Category[]> => {
-  await delay(300);
-  return mockCategories.map((c) => ({ ...c }));
+  const userId = await getUserId();
+  if (!userId) return [];
+
+  const { data, error } = await supabase
+    .from('categories')
+    .select('id,name,color,icon,is_system')
+    .or(`user_id.is.null,user_id.eq.${userId}`)
+    .order('is_system', { ascending: false })
+    .order('name', { ascending: true });
+
+  if (error) throw error;
+  return data.map(toCategory);
 };
 
 export const createCategory = async (data: Partial<Category>) => {
-  await delay(400);
-  const newCat: Category = {
-    id: `cat${Date.now()}`,
-    name: data.name || 'New Category',
-    icon: data.icon || 'Tag',
-    color: data.color || '#8B5CF6',
-    type: 'custom',
-    monthlySpent: 0,
-    monthlyBudget: data.monthlyBudget,
-  };
-  mockCategories.push(newCat);
-  return newCat;
+  const userId = await getUserId();
+  if (!userId) throw new Error('Not signed in');
+
+  const { data: inserted, error } = await supabase
+    .from('categories')
+    .insert({
+      user_id: userId,
+      name: data.name || 'New Category',
+      type: 'expense',
+      color: data.color || '#8B5CF6',
+      icon: data.icon || 'Tag',
+      is_system: false,
+    })
+    .select('id,name,color,icon,is_system')
+    .single();
+
+  if (error) throw error;
+  return toCategory(inserted);
 };
 
 // Budgets
 export const fetchBudgets = async (): Promise<Budget[]> => {
-  await delay(400);
-  return mockBudgets.map((b) => ({ ...b }));
+  const userId = await getUserId();
+  if (!userId) return [];
+
+  const { data, error } = await supabase
+    .from('budgets')
+    .select('id,user_id,category_id,name,amount,period,starts_on,categories(name,color)')
+    .eq('user_id', userId)
+    .order('created_at', { ascending: false });
+
+  if (error) throw error;
+  return data.map(toBudget);
 };
 
 export const createBudget = async (data: Partial<Budget>) => {
-  await delay(400);
-  const newBudget: Budget = {
-    id: `b${Date.now()}`,
-    userId: '1',
-    categoryId: data.categoryId || 'cat1',
-    categoryName: data.categoryName || 'Uncategorized',
-    categoryColor: data.categoryColor || '#8B5CF6',
-    amount: data.amount || 0,
-    spent: 0,
-    period: data.period || 'monthly',
-    month: new Date().getMonth() + 1,
-    year: new Date().getFullYear(),
-    alertThreshold: data.alertThreshold || 80,
-  };
-  mockBudgets.push(newBudget);
-  return newBudget;
+  const userId = await getUserId();
+  if (!userId) throw new Error('Not signed in');
+
+  const { data: inserted, error } = await supabase
+    .from('budgets')
+    .insert({
+      user_id: userId,
+      category_id: data.categoryId,
+      name: data.categoryName || 'Budget',
+      amount: data.amount || 0,
+      period: data.period || 'monthly',
+      starts_on: new Date().toISOString().slice(0, 10),
+    })
+    .select('id,user_id,category_id,name,amount,period,starts_on,categories(name,color)')
+    .single();
+
+  if (error) throw error;
+  return toBudget(inserted);
 };
 
 // Debts
 export const fetchDebts = async (): Promise<Debt[]> => {
-  await delay(400);
-  return mockDebts.map((d) => ({ ...d }));
+  const userId = await getUserId();
+  if (!userId) return [];
+
+  const { data, error } = await supabase
+    .from('debts')
+    .select('id,user_id,person_name,direction,amount,currency,status,due_date,notes,created_at')
+    .eq('user_id', userId)
+    .order('created_at', { ascending: false });
+
+  if (error) throw error;
+  return data.map(toDebt);
 };
 
 export const createDebt = async (data: Partial<Debt>) => {
-  await delay(400);
-  const newDebt: Debt = {
-    id: `d${Date.now()}`,
-    userId: '1',
-    personName: data.personName || 'Unknown',
-    amount: data.amount || 0,
-    currency: data.currency || 'UAH',
-    direction: data.direction || 'owed_to_me',
-    dueDate: data.dueDate,
-    status: 'pending',
-    notes: data.notes || '',
-    createdAt: new Date().toISOString(),
-  };
-  mockDebts.push(newDebt);
-  return newDebt;
+  const userId = await getUserId();
+  if (!userId) throw new Error('Not signed in');
+
+  const { data: inserted, error } = await supabase
+    .from('debts')
+    .insert({
+      user_id: userId,
+      person_name: data.personName || 'Unknown',
+      direction: data.direction || 'owed_to_me',
+      amount: data.amount || 0,
+      currency: data.currency || 'UAH',
+      due_date: data.dueDate || null,
+      notes: data.notes || null,
+    })
+    .select('id,user_id,person_name,direction,amount,currency,status,due_date,notes,created_at')
+    .single();
+
+  if (error) throw error;
+  return toDebt(inserted);
 };
 
 export const markDebtPaid = async (id: string) => {
-  await delay(300);
-  const idx = mockDebts.findIndex((d) => d.id === id);
-  if (idx >= 0) {
-    mockDebts[idx] = { ...mockDebts[idx], status: 'paid', settledAt: new Date().toISOString() };
-    return mockDebts[idx];
-  }
-  throw new Error('Debt not found');
+  const { data, error } = await supabase
+    .from('debts')
+    .update({ status: 'paid' })
+    .eq('id', id)
+    .select('id,user_id,person_name,direction,amount,currency,status,due_date,notes,created_at')
+    .single();
+
+  if (error) throw error;
+  return toDebt(data);
 };
 
 // AI Messages
@@ -250,13 +433,17 @@ export const disconnectMonobank = async () => {
 const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
 export const fetchCashFlow = async (): Promise<CashFlowData[]> => {
-  await delay(400);
+  const { total } = await fetchTransactions({ limit: 1 });
+  if (total === 0) return [];
+
   const currentMonth = new Date().getMonth();
   return mockCashFlowData.filter((d) => monthNames.indexOf(d.month) <= currentMonth).map((d) => ({ ...d }));
 };
 
 export const fetchTransactionOverview = async (): Promise<TransactionOverviewData[]> => {
-  await delay(400);
+  const { total } = await fetchTransactions({ limit: 1 });
+  if (total === 0) return [];
+
   const today = new Date().getDate();
   return mockTransactionOverviewData.filter((d) => parseInt(d.date.split('-')[2]) <= today).map((d) => ({ ...d }));
 };

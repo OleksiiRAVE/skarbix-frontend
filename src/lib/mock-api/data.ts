@@ -6,8 +6,8 @@ import type {
 
 export const mockUser: User = {
   id: '1',
-  name: 'Artem Koval',
-  email: 'artem@skarbix.app',
+  name: 'Skarbix User',
+  email: 'user@skarbix.app',
   avatar: '',
   currency: 'UAH',
   theme: 'light',
@@ -182,7 +182,7 @@ export const mockDebts: Debt[] = [
 export const mockAIMessages: AIMessage[] = [
   {
     id: 'ai1', role: 'assistant',
-    content: 'Hello Artem! I\'m your Skarbix AI assistant. I can help you track expenses, manage debts, create budgets, and analyze your spending patterns. How can I help you today?',
+    content: 'Hello! I\'m your Skarbix AI assistant. I can help you track expenses, manage debts, create budgets, and analyze your spending patterns. How can I help you today?',
     timestamp: '2025-05-25T08:00:00',
   },
   {

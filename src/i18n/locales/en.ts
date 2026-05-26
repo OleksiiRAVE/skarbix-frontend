@@ -34,6 +34,10 @@ export default {
   dashboard: {
     title: 'Dashboard',
     greeting: 'Good Afternoon',
+    greetingMorning: 'Good Morning',
+    greetingAfternoon: 'Good Afternoon',
+    greetingEvening: 'Good Evening',
+    greetingNight: 'Good Night',
     subtitle: "Welcome to Skarbix. Here's your smart financial summary.",
     newTransaction: 'New Transaction',
     accountOverview: 'Account Overview',

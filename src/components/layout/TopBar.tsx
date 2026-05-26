@@ -69,6 +69,9 @@ export function TopBar() {
   const [langOpen, setLangOpen] = useState(false);
 
   const unreadCount = mockNotifications.filter((n) => !n.read).length;
+  const displayName = user?.name || 'Account';
+  const displayEmail = user?.email || 'Signed in';
+  const initial = displayName.charAt(0).toUpperCase();
 
   const handleLogout = async () => {
     await signOut();
@@ -242,10 +245,10 @@ export function TopBar() {
           <PopoverTrigger asChild>
             <button className="flex items-center gap-2 pl-1 pr-2 py-1 rounded-xl hover:bg-[var(--sk-border-light)] transition-all">
               <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-[#8B5CF6] flex items-center justify-center text-white text-xs sm:text-sm font-medium">
-                {user?.name?.charAt(0) || 'A'}
+                {initial}
               </div>
               <span className="text-xs sm:text-sm font-medium text-[var(--sk-text)] hidden sm:block">
-                {user?.name || 'Artem'}
+                {displayName}
               </span>
               <ChevronDown className="w-3 h-3 text-[var(--sk-text-secondary)] hidden sm:block" />
             </button>
@@ -256,8 +259,8 @@ export function TopBar() {
             align="end"
           >
             <div className="p-2.5 border-b mb-1" style={{ borderColor: 'var(--sk-border)' }}>
-              <p className="font-semibold text-sm text-[var(--sk-text)]">{user?.name || 'Artem Koval'}</p>
-              <p className="text-xs text-[var(--sk-text-secondary)]">{user?.email || 'artem@skarbix.app'}</p>
+              <p className="font-semibold text-sm text-[var(--sk-text)]">{displayName}</p>
+              <p className="text-xs text-[var(--sk-text-secondary)]">{displayEmail}</p>
             </div>
             <div className="space-y-0.5">
               <button className="flex items-center gap-2.5 w-full px-3 py-2 rounded-xl text-sm text-[var(--sk-text)] hover:bg-[var(--sk-border-light)] transition-all">

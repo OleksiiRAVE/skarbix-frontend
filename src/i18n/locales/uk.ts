@@ -34,6 +34,10 @@ export default {
   dashboard: {
     title: 'Дашборд',
     greeting: 'Добрий день',
+    greetingMorning: 'Доброго ранку',
+    greetingAfternoon: 'Добрий день',
+    greetingEvening: 'Добрий вечір',
+    greetingNight: 'Доброї ночі',
     subtitle: 'Ласкаво просимо до Skarbix. Ось ваш фінансовий зведений огляд.',
     newTransaction: 'Нова транзакція',
     accountOverview: 'Огляд рахунку',
