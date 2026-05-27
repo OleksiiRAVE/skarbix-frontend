@@ -67,6 +67,7 @@ export function TopBar() {
   const setLanguage = useAppStore((s) => s.setLanguage);
   const user = useAppStore((s) => s.user);
   const [langOpen, setLangOpen] = useState(false);
+  const [profileOpen, setProfileOpen] = useState(false);
 
   const unreadCount = mockNotifications.filter((n) => !n.read).length;
   const displayName = user?.name || 'Account';
@@ -103,6 +104,11 @@ export function TopBar() {
     setLanguage(lang);
     i18n.changeLanguage(lang);
     setLangOpen(false);
+  };
+
+  const goToSettingsSection = (section: 'profile' | 'security' | 'appearance') => {
+    setProfileOpen(false);
+    navigate(`/settings?section=${section}`);
   };
 
   return (
@@ -192,7 +198,7 @@ export function TopBar() {
         </Popover>
 
         {/* Notifications */}
-        <Popover>
+        <Popover open={profileOpen} onOpenChange={setProfileOpen}>
           <PopoverTrigger asChild>
             <button
               className="p-2 rounded-xl text-[var(--sk-text-secondary)] hover:text-[var(--sk-text)] hover:bg-[var(--sk-border-light)] transition-all"
@@ -263,15 +269,24 @@ export function TopBar() {
               <p className="text-xs text-[var(--sk-text-secondary)]">{displayEmail}</p>
             </div>
             <div className="space-y-0.5">
-              <button className="flex items-center gap-2.5 w-full px-3 py-2 rounded-xl text-sm text-[var(--sk-text)] hover:bg-[var(--sk-border-light)] transition-all">
+              <button
+                onClick={() => goToSettingsSection('profile')}
+                className="flex items-center gap-2.5 w-full px-3 py-2 rounded-xl text-sm text-[var(--sk-text)] hover:bg-[var(--sk-border-light)] transition-all"
+              >
                 <User className="w-4 h-4 text-[var(--sk-text-secondary)]" />
                 {t('topbar.profile')}
               </button>
-              <button className="flex items-center gap-2.5 w-full px-3 py-2 rounded-xl text-sm text-[var(--sk-text)] hover:bg-[var(--sk-border-light)] transition-all">
+              <button
+                onClick={() => goToSettingsSection('security')}
+                className="flex items-center gap-2.5 w-full px-3 py-2 rounded-xl text-sm text-[var(--sk-text)] hover:bg-[var(--sk-border-light)] transition-all"
+              >
                 <Settings className="w-4 h-4 text-[var(--sk-text-secondary)]" />
                 {t('topbar.settings')}
               </button>
-              <button className="flex items-center gap-2.5 w-full px-3 py-2 rounded-xl text-sm text-[var(--sk-text)] hover:bg-[var(--sk-border-light)] transition-all">
+              <button
+                onClick={() => goToSettingsSection('appearance')}
+                className="flex items-center gap-2.5 w-full px-3 py-2 rounded-xl text-sm text-[var(--sk-text)] hover:bg-[var(--sk-border-light)] transition-all"
+              >
                 <Palette className="w-4 h-4 text-[var(--sk-text-secondary)]" />
                 {t('topbar.appearance')}
               </button>

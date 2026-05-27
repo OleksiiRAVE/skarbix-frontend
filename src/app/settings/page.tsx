@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
+import { useSearchParams } from 'react-router';
 import {
   User, Shield, CreditCard, Bell, Palette, Database, Trash2,
   Moon, Sun, Monitor, Lock, Key, Eye, EyeOff, ExternalLink, RefreshCw,
@@ -28,8 +29,14 @@ const sidebarItems = [
   { id: 'data', label: 'Data Export', shortLabel: 'Export', icon: Database },
 ];
 
+const sectionIds = new Set(sidebarItems.map((item) => item.id));
+
 export default function SettingsPage() {
-  const [activeSection, setActiveSection] = useState('profile');
+  const [searchParams, setSearchParams] = useSearchParams();
+  const requestedSection = searchParams.get('section');
+  const [activeSection, setActiveSection] = useState(
+    requestedSection && sectionIds.has(requestedSection) ? requestedSection : 'profile',
+  );
   const [deleteModal, setDeleteModal] = useState(false);
   const [monobankToken, setMonobankToken] = useState('');
   const [monobankStatus, setMonobankStatus] = useState<MonobankConnection | null>(null);
@@ -43,6 +50,12 @@ export default function SettingsPage() {
   const displayName = user?.name || 'Skarbix User';
   const displayEmail = user?.email || '';
   const initial = displayName.charAt(0).toUpperCase();
+
+  useEffect(() => {
+    if (requestedSection && sectionIds.has(requestedSection)) {
+      setActiveSection(requestedSection);
+    }
+  }, [requestedSection]);
 
   useEffect(() => {
     let mounted = true;
@@ -126,7 +139,10 @@ export default function SettingsPage() {
               {sidebarItems.map((item) => (
                 <button
                   key={item.id}
-                  onClick={() => setActiveSection(item.id)}
+                  onClick={() => {
+                    setActiveSection(item.id);
+                    setSearchParams({ section: item.id });
+                  }}
                   className={`flex items-center gap-2 sm:gap-3 px-3 sm:px-4 py-2.5 rounded-xl text-xs sm:text-sm font-medium transition-all whitespace-nowrap lg:whitespace-normal ${
                     activeSection === item.id
                       ? 'bg-[#8B5CF6]/10 text-[#8B5CF6]'
