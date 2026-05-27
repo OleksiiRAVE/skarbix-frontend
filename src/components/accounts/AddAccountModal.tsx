@@ -37,6 +37,19 @@ const typeOptions: { value: Account['type']; labelKey: string; icon: React.Compo
 
 const defaultIcon = 'lucide:credit-card';
 
+const accountTemplates: Array<{
+  name: string;
+  type: Account['type'];
+  icon: string;
+  color: string;
+}> = [
+  { name: 'Primary Card', type: 'card', icon: 'lucide:credit-card', color: '#8B5CF6' },
+  { name: 'Mono', type: 'card', icon: 'lucide:landmark', color: '#111827' },
+  { name: 'Cash', type: 'cash', icon: 'lucide:banknote', color: '#10B981' },
+  { name: 'Savings', type: 'savings', icon: 'lucide:piggy-bank', color: '#3B82F6' },
+  { name: 'Investment', type: 'investment', icon: 'lucide:trending-up', color: '#F59E0B' },
+];
+
 const getDefaultForm = (account?: Account | null) => ({
   name: account?.name || '',
   type: account?.type || 'card' as Account['type'],
@@ -96,6 +109,16 @@ export function AddAccountModal({ open, onOpenChange, onSuccess, account }: AddA
     } finally {
       setSaving(false);
     }
+  };
+
+  const applyTemplate = (template: typeof accountTemplates[number]) => {
+    setForm((current) => ({
+      ...current,
+      name: template.name,
+      type: template.type,
+      icon: template.icon,
+      color: template.color,
+    }));
   };
 
   return (
@@ -208,6 +231,30 @@ export function AddAccountModal({ open, onOpenChange, onSuccess, account }: AddA
             </div>
             <p className="ml-auto font-bold tabular-nums text-[var(--sk-text)]">{formatCurrency(Number(form.balance || 0))}</p>
           </div>
+
+          {!isEdit && (
+            <div className="space-y-2">
+              <Label className="text-sm font-medium text-[var(--sk-text)]">{t('addAccount.templates')}</Label>
+              <div className="flex gap-1.5 overflow-x-auto overscroll-x-contain pb-1 [scrollbar-width:thin]">
+                {accountTemplates.map((template) => (
+                  <button
+                    key={`${template.name}-${template.type}`}
+                    type="button"
+                    onClick={() => applyTemplate(template)}
+                    className="shrink-0 h-8 rounded-full border border-[var(--sk-border)] bg-[var(--sk-border-light)] hover:bg-[var(--sk-border)] px-2.5 flex items-center gap-1.5 text-[11px] text-[var(--sk-text)] transition-colors"
+                  >
+                    <span
+                      className="w-5 h-5 rounded-md flex items-center justify-center"
+                      style={{ backgroundColor: `${template.color}18`, color: template.color }}
+                    >
+                      <Icon icon={template.icon} className="w-3 h-3" />
+                    </span>
+                    {template.name}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
 
         <div className="p-6 sm:p-8 pt-4 flex gap-3">

@@ -55,6 +55,18 @@ export default {
     income: 'Доходи',
     expense: 'Витрати',
     savings: 'Збереження',
+    noChartData: 'Грошового потоку поки немає',
+    noChartDataSubtitle: 'Додайте транзакції доходів або витрат, і Skarbix побудує графік із реальних даних.',
+    noTransactionData: 'Графіка транзакцій поки немає',
+    noTransactionDataSubtitle: 'Динаміка по днях зʼявиться тут після додавання транзакцій.',
+    noRecentActivity: 'Останньої активності поки немає',
+    noRecentActivitySubtitle: 'Останні транзакції зʼявляться тут, коли ви почнете вести облік.',
+  },
+  systemCategories: {
+    subscriptions: 'Підписки',
+    debts_expense: 'Повернення боргу',
+    debts_income: 'Повернення боргу',
+    debts: 'Борги',
   },
   transactions: {
     title: 'Транзакції',
@@ -187,6 +199,7 @@ export default {
     toastError: 'Не вдалося додати рахунок',
     toastUpdate: 'Рахунок оновлено',
     toastUpdateError: 'Не вдалося оновити рахунок',
+    templates: 'Шаблони',
   },
   addCategory: {
     title: 'Додати категорію',

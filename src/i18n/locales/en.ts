@@ -55,6 +55,18 @@ export default {
     income: 'Income',
     expense: 'Expense',
     savings: 'Savings',
+    noChartData: 'No cash flow yet',
+    noChartDataSubtitle: 'Add income or expense transactions and Skarbix will build the chart from real data.',
+    noTransactionData: 'No transaction chart yet',
+    noTransactionDataSubtitle: 'Daily transaction dynamics will appear here after you add transactions.',
+    noRecentActivity: 'No recent activity yet',
+    noRecentActivitySubtitle: 'Your latest transactions will appear here once you start tracking money.',
+  },
+  systemCategories: {
+    subscriptions: 'Subscriptions',
+    debts_expense: 'Debt repayment',
+    debts_income: 'Debt repayment',
+    debts: 'Debts',
   },
   transactions: {
     title: 'Transactions',
@@ -185,6 +197,7 @@ export default {
     toastError: 'Could not add account',
     toastUpdate: 'Account updated',
     toastUpdateError: 'Could not update account',
+    templates: 'Templates',
   },
   addCategory: {
     title: 'Add Category',

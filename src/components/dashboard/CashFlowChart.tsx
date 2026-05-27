@@ -6,7 +6,7 @@ import {
 } from 'recharts';
 import { formatCurrencyShort } from '@/lib/utils/format';
 import { Tooltip as UITooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip';
-import { Info } from 'lucide-react';import type { CashFlowData } from '@/types';
+import { Info, LineChart as LineChartIcon } from 'lucide-react';import type { CashFlowData } from '@/types';
 import type { TooltipProps } from 'recharts';
 
 function CashFlowTooltip({ active, payload, label }: TooltipProps<number, string>) {
@@ -50,6 +50,7 @@ export function CashFlowChart({ data }: CashFlowChartProps) {
   ];
 
   const total = data.reduce((sum, d) => sum + d[activeTab], 0);
+  const hasData = data.length > 0;
 
   return (
     <motion.div
@@ -101,45 +102,32 @@ export function CashFlowChart({ data }: CashFlowChartProps) {
         </div>
       </div>
 
-      {/* Chart */}
-      <div className="h-[260px]">
-        <ResponsiveContainer width="100%" height="100%">
-          <AreaChart data={data} margin={{ top: 10, right: 10, left: -10, bottom: 0 }}>
-            <defs>
-              <linearGradient id={`grad-${activeTab}`} x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor={tabGradients[activeTab][0]} stopOpacity={0.25} />
-                <stop offset="100%" stopColor={tabGradients[activeTab][1]} stopOpacity={0} />
-              </linearGradient>
-            </defs>
-            <CartesianGrid strokeDasharray="3 3" stroke="var(--sk-border)" vertical={false} />
-            <XAxis
-              dataKey="month"
-              axisLine={false}
-              tickLine={false}
-              tick={{ fontSize: 11, fill: 'var(--sk-text-secondary)' }}
-              dy={8}
-            />
-            <YAxis
-              axisLine={false}
-              tickLine={false}
-              tick={{ fontSize: 11, fill: 'var(--sk-text-secondary)' }}
-              tickFormatter={(v) => `₴${formatCurrencyShort(v)}`}
-              dx={-5}
-            />
-            <Tooltip content={<CashFlowTooltip />} />
-            <ReferenceLine x="Jul" stroke="#F59E0B" strokeWidth={2} strokeDasharray="0" />
-            <Area
-              type="monotone"
-              dataKey={activeTab}
-              stroke={tabGradients[activeTab][0]}
-              strokeWidth={2.5}
-              fill={`url(#grad-${activeTab})`}
-              dot={false}
-              activeDot={{ r: 5, fill: tabGradients[activeTab][0], stroke: '#fff', strokeWidth: 2 }}
-            />
-          </AreaChart>
-        </ResponsiveContainer>
-      </div>
+      {hasData ? (
+        <div className="h-[260px]">
+          <ResponsiveContainer width="100%" height="100%">
+            <AreaChart data={data} margin={{ top: 10, right: 10, left: -10, bottom: 0 }}>
+              <defs>
+                <linearGradient id={`grad-${activeTab}`} x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stopColor={tabGradients[activeTab][0]} stopOpacity={0.25} />
+                  <stop offset="100%" stopColor={tabGradients[activeTab][1]} stopOpacity={0} />
+                </linearGradient>
+              </defs>
+              <CartesianGrid strokeDasharray="3 3" stroke="var(--sk-border)" vertical={false} />
+              <XAxis dataKey="month" axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: 'var(--sk-text-secondary)' }} dy={8} />
+              <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: 'var(--sk-text-secondary)' }} tickFormatter={(v) => `₴${formatCurrencyShort(v)}`} dx={-5} />
+              <Tooltip content={<CashFlowTooltip />} />
+              <ReferenceLine x="Jul" stroke="#F59E0B" strokeWidth={2} strokeDasharray="0" />
+              <Area type="monotone" dataKey={activeTab} stroke={tabGradients[activeTab][0]} strokeWidth={2.5} fill={`url(#grad-${activeTab})`} dot={false} activeDot={{ r: 5, fill: tabGradients[activeTab][0], stroke: '#fff', strokeWidth: 2 }} />
+            </AreaChart>
+          </ResponsiveContainer>
+        </div>
+      ) : (
+        <div className="h-[260px] rounded-2xl border border-dashed border-[var(--sk-border)] bg-[var(--sk-border-light)]/50 flex flex-col items-center justify-center text-center px-6">
+          <LineChartIcon className="w-8 h-8 text-[var(--sk-text-secondary)] mb-3" />
+          <p className="text-sm font-semibold text-[var(--sk-text)]">{t('dashboard.noChartData')}</p>
+          <p className="text-xs text-[var(--sk-text-secondary)] mt-1 max-w-[260px]">{t('dashboard.noChartDataSubtitle')}</p>
+        </div>
+      )}
     </motion.div>
   );
 }

@@ -105,23 +105,29 @@ export function AddCategoryModal({ open, onOpenChange, onSuccess, category }: Ad
         <div className="px-6 sm:px-8 space-y-5 max-h-[64vh] overflow-y-auto">
           <div className="space-y-1.5">
             <Label className="text-sm font-medium text-[var(--sk-text)]">{t('addCategory.kind')}</Label>
-            <div className="h-11 rounded-full border border-[var(--sk-border)] bg-[var(--sk-border-light)] p-0.5 grid grid-cols-2">
-              {(['expense', 'income'] as const).map((kind) => (
-                <button
-                  key={kind}
-                  type="button"
-                  onClick={() => setForm((current) => ({ ...current, kind }))}
-                  className={`rounded-full text-sm font-semibold transition-all ${
-                    form.kind === kind
-                      ? kind === 'expense'
-                        ? 'bg-red-500/10 text-red-500 shadow-sm'
-                        : 'bg-emerald-500/10 text-emerald-600 shadow-sm'
-                      : 'text-[var(--sk-text-secondary)]'
-                  }`}
-                >
-                  {kind === 'income' ? t('addCategory.kindIncome') : t('addCategory.kindExpense')}
-                </button>
-              ))}
+            <div className="flex rounded-full border border-[var(--sk-border)] overflow-hidden h-11">
+              <button
+                type="button"
+                onClick={() => setForm((current) => ({ ...current, kind: 'expense' }))}
+                className={`flex-1 text-sm font-medium transition-colors ${
+                  form.kind === 'expense'
+                    ? 'bg-red-500/10 text-red-400'
+                    : 'text-[var(--sk-text-secondary)] hover:text-[var(--sk-text)]'
+                }`}
+              >
+                {t('addCategory.kindExpense')}
+              </button>
+              <button
+                type="button"
+                onClick={() => setForm((current) => ({ ...current, kind: 'income' }))}
+                className={`flex-1 text-sm font-medium transition-colors ${
+                  form.kind === 'income'
+                    ? 'bg-green-500/10 text-green-500'
+                    : 'text-[var(--sk-text-secondary)] hover:text-[var(--sk-text)]'
+                }`}
+              >
+                {t('addCategory.kindIncome')}
+              </button>
             </div>
           </div>
 
@@ -167,29 +173,6 @@ export function AddCategoryModal({ open, onOpenChange, onSuccess, category }: Ad
             </div>
           </div>
 
-          {!isEdit && templates.length > 0 && (
-            <div className="space-y-2">
-              <Label className="text-sm font-medium text-[var(--sk-text)]">{t('addCategory.templates')}</Label>
-              <div className="flex gap-2 overflow-x-auto overscroll-x-contain pb-1">
-                {templates.map((template) => (
-                  <button
-                    key={template.key}
-                    onClick={() => applyTemplate(template)}
-                    className="shrink-0 h-10 rounded-full border border-[var(--sk-border)] bg-[var(--sk-border-light)] hover:bg-[var(--sk-border)] px-3 flex items-center gap-2 text-xs text-[var(--sk-text)] transition-colors"
-                  >
-                    <span
-                      className="w-6 h-6 rounded-lg flex items-center justify-center"
-                      style={{ backgroundColor: `${template.color}18`, color: template.color }}
-                    >
-                      <Icon icon={template.icon} className="w-3.5 h-3.5" />
-                    </span>
-                    {template.name}
-                  </button>
-                ))}
-              </div>
-            </div>
-          )}
-
           <div className="rounded-2xl border border-[var(--sk-border)] bg-[var(--sk-border-light)] p-4 flex items-center gap-3">
             <div
               className="w-11 h-11 rounded-xl flex items-center justify-center flex-shrink-0"
@@ -202,6 +185,29 @@ export function AddCategoryModal({ open, onOpenChange, onSuccess, category }: Ad
               <p className="text-xs text-[var(--sk-text-secondary)]">{form.kind === 'income' ? t('addCategory.kindIncome') : t('addCategory.kindExpense')}</p>
             </div>
           </div>
+
+          {!isEdit && templates.length > 0 && (
+            <div className="space-y-2">
+              <Label className="text-sm font-medium text-[var(--sk-text)]">{t('addCategory.templates')}</Label>
+              <div className="flex gap-1.5 overflow-x-auto overscroll-x-contain pb-1 [scrollbar-width:thin]">
+                {templates.map((template) => (
+                  <button
+                    key={template.key}
+                    onClick={() => applyTemplate(template)}
+                    className="shrink-0 h-8 rounded-full border border-[var(--sk-border)] bg-[var(--sk-border-light)] hover:bg-[var(--sk-border)] px-2.5 flex items-center gap-1.5 text-[11px] text-[var(--sk-text)] transition-colors"
+                  >
+                    <span
+                      className="w-5 h-5 rounded-md flex items-center justify-center"
+                      style={{ backgroundColor: `${template.color}18`, color: template.color }}
+                    >
+                      <Icon icon={template.icon} className="w-3 h-3" />
+                    </span>
+                    {template.name}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
 
         <div className="p-6 sm:p-8 pt-4 flex gap-3">

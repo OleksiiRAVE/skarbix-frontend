@@ -43,7 +43,7 @@ export default function DashboardPage() {
       try {
         const [accRes, txRes, cfRes, toRes] = await Promise.all([
           fetchAccounts(),
-          fetchTransactions({ limit: 10 }),
+          fetchTransactions({ limit: 500 }),
           fetchCashFlow(),
           fetchTransactionOverview(),
         ]);
@@ -66,6 +66,7 @@ export default function DashboardPage() {
 
   const primaryAccount = accounts.find((a) => a.type === 'card') || accounts[0];
   const balance = primaryAccount?.balance || 0;
+  const recentTransactions = transactions.slice(0, 10);
   const income = transactions.filter(t => t.type === 'income').reduce((s, t) => s + t.amount, 0);
   const expense = transactions.filter(t => t.type === 'expense').reduce((s, t) => s + t.amount, 0);
 
@@ -114,7 +115,7 @@ export default function DashboardPage() {
 
         <TransactionOverviewChart data={txOverview} />
 
-        <RecentActivity transactions={transactions} />
+        <RecentActivity transactions={recentTransactions} />
       </div>
 
       <AddTransactionModal open={modalOpen} onOpenChange={setModalOpen} />

@@ -1,7 +1,7 @@
 import {
   mockUser,
   mockAIMessages, mockNotifications,
-  mockMonobankConnection, mockCashFlowData, mockTransactionOverviewData,
+  mockMonobankConnection,
   mockAnalyticsData, mockHistoryEvents,
 } from './data';
 import { supabase } from '@/lib/supabase/client';
@@ -707,19 +707,64 @@ export const disconnectMonobank = async () => {
 const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
 export const fetchCashFlow = async (): Promise<CashFlowData[]> => {
-  const { total } = await fetchTransactions({ limit: 1 });
+  const { transactions, total } = await fetchTransactions({ limit: 500 });
   if (total === 0) return [];
 
   const currentMonth = new Date().getMonth();
-  return mockCashFlowData.filter((d) => monthNames.indexOf(d.month) <= currentMonth).map((d) => ({ ...d }));
+  const currentYear = new Date().getFullYear();
+  return monthNames.slice(0, currentMonth + 1).map((month, monthIndex) => {
+    const monthTransactions = transactions.filter((tx) => {
+      const date = new Date(tx.date);
+      return date.getFullYear() === currentYear && date.getMonth() === monthIndex;
+    });
+    const income = monthTransactions
+      .filter((tx) => tx.type === 'income')
+      .reduce((sum, tx) => sum + tx.amount, 0);
+    const expense = monthTransactions
+      .filter((tx) => tx.type === 'expense')
+      .reduce((sum, tx) => sum + tx.amount, 0);
+    return {
+      month,
+      income,
+      expense,
+      savings: income - expense,
+    };
+  }).filter((item) => item.income > 0 || item.expense > 0 || item.savings !== 0);
 };
 
 export const fetchTransactionOverview = async (): Promise<TransactionOverviewData[]> => {
-  const { total } = await fetchTransactions({ limit: 1 });
+  const { transactions, total } = await fetchTransactions({ limit: 500 });
   if (total === 0) return [];
 
-  const today = new Date().getDate();
-  return mockTransactionOverviewData.filter((d) => parseInt(d.date.split('-')[2]) <= today).map((d) => ({ ...d }));
+  const now = new Date();
+  const currentYear = now.getFullYear();
+  const currentMonth = now.getMonth();
+  const previousMonthDate = new Date(currentYear, currentMonth - 1, 1);
+  const daysInMonth = now.getDate();
+
+  return Array.from({ length: daysInMonth }, (_, index) => {
+    const day = index + 1;
+    const current = transactions
+      .filter((tx) => {
+        const date = new Date(tx.date);
+        return date.getFullYear() === currentYear && date.getMonth() === currentMonth && date.getDate() === day;
+      })
+      .reduce((sum, tx) => sum + tx.amount, 0);
+    const previous = transactions
+      .filter((tx) => {
+        const date = new Date(tx.date);
+        return date.getFullYear() === previousMonthDate.getFullYear()
+          && date.getMonth() === previousMonthDate.getMonth()
+          && date.getDate() === day;
+      })
+      .reduce((sum, tx) => sum + tx.amount, 0);
+
+    return {
+      date: new Date(currentYear, currentMonth, day).toISOString().slice(0, 10),
+      current,
+      previous,
+    };
+  }).filter((item) => item.current > 0 || item.previous > 0);
 };
 
 // Analytics

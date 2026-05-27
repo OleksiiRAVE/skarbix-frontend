@@ -11,6 +11,7 @@ import { ColorPicker } from '@/components/shared/ColorPicker';
 import { IconPicker } from '@/components/shared/IconPicker';
 import { createSubscription, updateSubscription } from '@/lib/mock-api/api';
 import type { Account, Category, Subscription } from '@/types';
+import { useTranslation } from 'react-i18next';
 
 interface AddSubscriptionModalProps {
   open: boolean;
@@ -41,6 +42,7 @@ export function AddSubscriptionModal({
   accounts,
   categories,
 }: AddSubscriptionModalProps) {
+  const { t } = useTranslation();
   const isEdit = !!subscription;
   const [saving, setSaving] = useState(false);
   const [form, setForm] = useState(getDefaultForm(subscription, categories));
@@ -82,6 +84,10 @@ export function AddSubscriptionModal({
       setSaving(false);
     }
   };
+
+  const getCategoryName = (category: Category) => (
+    category.templateKey ? t(`systemCategories.${category.templateKey}`, { defaultValue: category.name }) : category.name
+  );
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -145,7 +151,7 @@ export function AddSubscriptionModal({
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="none">No category</SelectItem>
-                {categories.map((category) => <SelectItem key={category.id} value={category.id}>{category.name}</SelectItem>)}
+                {categories.map((category) => <SelectItem key={category.id} value={category.id}>{getCategoryName(category)}</SelectItem>)}
               </SelectContent>
             </Select>
           </div>

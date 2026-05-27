@@ -1,7 +1,7 @@
 import { motion } from 'framer-motion';
 import { Link } from 'react-router';
 import { useTranslation } from 'react-i18next';
-import { ArrowRight } from 'lucide-react';
+import { ArrowRight, ReceiptText } from 'lucide-react';
 import { formatRelativeTime, formatCurrency } from '@/lib/utils/format';
 import type { Transaction } from '@/types';
 
@@ -55,9 +55,15 @@ export function RecentActivity({ transactions }: RecentActivityProps) {
         <h3 className="text-lg font-semibold text-[var(--sk-text)]">{t('dashboard.recentActivity')}</h3>
       </div>
 
-      {/* List */}
-      <div className="space-y-0">
-        {transactions.slice(0, 6).map((tx, i) => {
+      {transactions.length === 0 ? (
+        <div className="min-h-[180px] rounded-2xl border border-dashed border-[var(--sk-border)] bg-[var(--sk-border-light)]/50 flex flex-col items-center justify-center text-center px-6">
+          <ReceiptText className="w-8 h-8 text-[var(--sk-text-secondary)] mb-3" />
+          <p className="text-sm font-semibold text-[var(--sk-text)]">{t('dashboard.noRecentActivity')}</p>
+          <p className="text-xs text-[var(--sk-text-secondary)] mt-1 max-w-[280px]">{t('dashboard.noRecentActivitySubtitle')}</p>
+        </div>
+      ) : (
+        <div className="space-y-0">
+          {transactions.slice(0, 6).map((tx, i) => {
           const catColor = categoryIconColors[tx.category] || '#8B5CF6';
           const icon = categoryIcons[tx.merchant] || tx.merchant.charAt(0);
           const isIncome = tx.type === 'income';
@@ -98,8 +104,9 @@ export function RecentActivity({ transactions }: RecentActivityProps) {
               </span>
             </motion.div>
           );
-        })}
-      </div>
+          })}
+        </div>
+      )}
 
       {/* Footer */}
       <Link

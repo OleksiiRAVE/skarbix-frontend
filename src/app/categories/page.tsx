@@ -52,6 +52,10 @@ export default function CategoriesPage() {
     }
   };
 
+  const getCategoryName = (category: Category) => (
+    category.templateKey ? t(`systemCategories.${category.templateKey}`, { defaultValue: category.name }) : category.name
+  );
+
   useEffect(() => {
     let cancelled = false;
     fetchCategories().then((data) => {
@@ -136,7 +140,7 @@ export default function CategoriesPage() {
                   <Icon icon={category.icon || 'lucide:tag'} className="w-5 h-5" />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-semibold text-[var(--sk-text)] truncate">{category.name}</p>
+                  <p className="text-sm font-semibold text-[var(--sk-text)] truncate">{getCategoryName(category)}</p>
                   <p className="text-xs text-[var(--sk-text-secondary)] flex items-center gap-1">
                     {category.isProtected && <Lock className="w-3 h-3" />}
                     {category.kind === 'income' ? t('categories.kindIncome') : t('categories.kindExpense')}

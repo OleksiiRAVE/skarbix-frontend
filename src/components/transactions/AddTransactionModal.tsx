@@ -64,6 +64,22 @@ export function AddTransactionModal({ open, onOpenChange, onSuccess }: AddTransa
     onOpenChange(nextOpen);
   };
 
+  const filteredCategories = categories.filter((category) => category.kind === formData.type);
+
+  const setTransactionType = (type: 'income' | 'expense') => {
+    setFormData((current) => ({
+      ...current,
+      type,
+      category: categories.some((category) => category.id === current.category && category.kind === type)
+        ? current.category
+        : '',
+    }));
+  };
+
+  const getCategoryName = (category: Category) => (
+    category.templateKey ? t(`systemCategories.${category.templateKey}`, { defaultValue: category.name }) : category.name
+  );
+
   const handleAdd = async () => {
     try {
       const cat = categories.find((c) => c.id === formData.category);
@@ -98,7 +114,7 @@ export function AddTransactionModal({ open, onOpenChange, onSuccess }: AddTransa
           {/* Type */}
           <div className="flex rounded-full border border-[var(--sk-border)] overflow-hidden h-11">
             <button
-              onClick={() => setFormData({ ...formData, type: 'expense' })}
+              onClick={() => setTransactionType('expense')}
               className={`flex-1 text-sm font-medium transition-colors ${
                 formData.type === 'expense'
                   ? 'bg-red-500/10 text-red-400'
@@ -108,7 +124,7 @@ export function AddTransactionModal({ open, onOpenChange, onSuccess }: AddTransa
               {t('addTransaction.expense')}
             </button>
             <button
-              onClick={() => setFormData({ ...formData, type: 'income' })}
+              onClick={() => setTransactionType('income')}
               className={`flex-1 text-sm font-medium transition-colors ${
                 formData.type === 'income'
                   ? 'bg-green-500/10 text-green-500'
@@ -193,8 +209,8 @@ export function AddTransactionModal({ open, onOpenChange, onSuccess }: AddTransa
                 <SelectValue placeholder={t('addTransaction.selectCategory')} />
               </SelectTrigger>
               <SelectContent>
-                {categories.map((c) => (
-                  <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
+                {filteredCategories.map((c) => (
+                  <SelectItem key={c.id} value={c.id}>{getCategoryName(c)}</SelectItem>
                 ))}
               </SelectContent>
             </Select>
