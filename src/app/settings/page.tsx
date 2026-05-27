@@ -1,8 +1,8 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import {
   User, Shield, CreditCard, Bell, Palette, Database, Trash2,
-  Moon, Sun, Monitor, Lock, Key, Eye, EyeOff,
+  Moon, Sun, Monitor, Lock, Key, Eye, EyeOff, ExternalLink, RefreshCw,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -10,8 +10,14 @@ import { Label } from '@/components/ui/label';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { useAppStore } from '@/store';
 import { Switch } from '@/components/ui/switch';
-import { mockMonobankConnection } from '@/lib/mock-api/data';
+import {
+  connectMonobank,
+  disconnectMonobank,
+  fetchMonobankStatus,
+  syncMonobank,
+} from '@/lib/mock-api/api';
 import { formatDate } from '@/lib/utils/format';
+import type { MonobankConnection } from '@/types';
 
 const sidebarItems = [
   { id: 'profile', label: 'Profile', shortLabel: 'Profile', icon: User },
@@ -26,6 +32,10 @@ export default function SettingsPage() {
   const [activeSection, setActiveSection] = useState('profile');
   const [deleteModal, setDeleteModal] = useState(false);
   const [monobankToken, setMonobankToken] = useState('');
+  const [monobankStatus, setMonobankStatus] = useState<MonobankConnection | null>(null);
+  const [monobankLoading, setMonobankLoading] = useState(false);
+  const [monobankError, setMonobankError] = useState('');
+  const [monobankMessage, setMonobankMessage] = useState('');
   const [showPwd, setShowPwd] = useState(false);
   const theme = useAppStore((s) => s.theme);
   const setTheme = useAppStore((s) => s.setTheme);
@@ -33,6 +43,68 @@ export default function SettingsPage() {
   const displayName = user?.name || 'Skarbix User';
   const displayEmail = user?.email || '';
   const initial = displayName.charAt(0).toUpperCase();
+
+  useEffect(() => {
+    let mounted = true;
+    void fetchMonobankStatus()
+      .then((status) => {
+        if (mounted) setMonobankStatus(status);
+      })
+      .catch(() => {
+        if (mounted) setMonobankStatus({ connected: false, webhookEnabled: false, importedTransactions: 0 });
+      });
+
+    return () => {
+      mounted = false;
+    };
+  }, []);
+
+  const handleConnectMonobank = async () => {
+    setMonobankError('');
+    setMonobankMessage('');
+    setMonobankLoading(true);
+    try {
+      const status = await connectMonobank(monobankToken);
+      setMonobankStatus(status);
+      setMonobankToken('');
+      setMonobankMessage(`Connected. Imported ${status.importedTransactions} transactions.`);
+    } catch (error) {
+      setMonobankError(error instanceof Error ? error.message : 'Could not connect Monobank');
+    } finally {
+      setMonobankLoading(false);
+    }
+  };
+
+  const handleSyncMonobank = async () => {
+    setMonobankError('');
+    setMonobankMessage('');
+    setMonobankLoading(true);
+    try {
+      const result = await syncMonobank();
+      const status = await fetchMonobankStatus();
+      setMonobankStatus(status);
+      setMonobankMessage(`Synced. Imported ${result.imported} new transactions.`);
+    } catch (error) {
+      setMonobankError(error instanceof Error ? error.message : 'Could not sync Monobank');
+    } finally {
+      setMonobankLoading(false);
+    }
+  };
+
+  const handleDisconnectMonobank = async () => {
+    setMonobankError('');
+    setMonobankMessage('');
+    setMonobankLoading(true);
+    try {
+      const status = await disconnectMonobank();
+      setMonobankStatus(status);
+      setMonobankMessage('Monobank disconnected. Imported data stays in Skarbix.');
+    } catch (error) {
+      setMonobankError(error instanceof Error ? error.message : 'Could not disconnect Monobank');
+    } finally {
+      setMonobankLoading(false);
+    }
+  };
 
   return (
     <div className="space-y-4 sm:space-y-6">
@@ -163,30 +235,46 @@ export default function SettingsPage() {
                     <div>
                       <p className="text-sm sm:text-base font-semibold text-[var(--sk-text)]">Monobank</p>
                       <div className="flex items-center gap-1.5">
-                        <span className="w-1.5 h-1.5 rounded-full bg-green-500/100" />
-                        <span className="text-xs text-[var(--sk-text-secondary)]">Connected</span>
+                        <span className={`w-1.5 h-1.5 rounded-full ${monobankStatus?.connected ? 'bg-green-500/100' : 'bg-[var(--sk-text-secondary)]/50'}`} />
+                        <span className="text-xs text-[var(--sk-text-secondary)]">
+                          {monobankStatus?.connected ? 'Connected' : 'Not connected'}
+                        </span>
                       </div>
                     </div>
                   </div>
-                  <span className="text-xs text-[var(--sk-text-secondary)]">{mockMonobankConnection.accountName}</span>
+                  <span className="text-xs text-[var(--sk-text-secondary)]">{monobankStatus?.accountName || 'Personal API'}</span>
                 </div>
 
                 <div className="grid grid-cols-2 gap-2 sm:gap-3 mb-3 sm:mb-4 text-xs sm:text-sm">
                   <div className="bg-[var(--sk-card)] rounded-xl p-2.5 sm:p-3">
                     <p className="text-[var(--sk-text-secondary)] mb-0.5 text-xs">Last Sync</p>
-                    <p className="font-medium text-[var(--sk-text)] text-xs sm:text-sm">{formatDate(mockMonobankConnection.lastSync || '')}</p>
+                    <p className="font-medium text-[var(--sk-text)] text-xs sm:text-sm">
+                      {monobankStatus?.lastSync ? formatDate(monobankStatus.lastSync) : 'Never'}
+                    </p>
                   </div>
                   <div className="bg-[var(--sk-card)] rounded-xl p-2.5 sm:p-3">
                     <p className="text-[var(--sk-text-secondary)] mb-0.5 text-xs">Transactions</p>
-                    <p className="font-medium text-[var(--sk-text)] text-xs sm:text-sm">{mockMonobankConnection.importedTransactions} imported</p>
+                    <p className="font-medium text-[var(--sk-text)] text-xs sm:text-sm">{monobankStatus?.importedTransactions ?? 0} imported</p>
                   </div>
                 </div>
 
-                <div className="flex gap-2">
-                  <Button size="sm" className="h-8 bg-[#8B5CF6] hover:bg-[#7C3AED] text-white rounded-full text-xs px-3 sm:px-4">
+                <div className="flex flex-wrap gap-2">
+                  <Button
+                    size="sm"
+                    disabled={!monobankStatus?.connected || monobankLoading}
+                    onClick={handleSyncMonobank}
+                    className="h-8 bg-[#8B5CF6] hover:bg-[#7C3AED] text-white rounded-full text-xs px-3 sm:px-4"
+                  >
+                    <RefreshCw className={`w-3.5 h-3.5 mr-1.5 ${monobankLoading ? 'animate-spin' : ''}`} />
                     Sync Now
                   </Button>
-                  <Button size="sm" variant="outline" className="h-8 rounded-full text-xs border-[var(--sk-border)] text-red-500 hover:bg-red-500/10 px-3 sm:px-4">
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    disabled={!monobankStatus?.connected || monobankLoading}
+                    onClick={handleDisconnectMonobank}
+                    className="h-8 rounded-full text-xs border-[var(--sk-border)] text-red-500 hover:bg-red-500/10 px-3 sm:px-4"
+                  >
                     Disconnect
                   </Button>
                 </div>
@@ -195,13 +283,24 @@ export default function SettingsPage() {
               <div className="bg-[var(--sk-border-light)] rounded-xl sm:rounded-2xl p-3 sm:p-4 border border-[var(--sk-border)]">
                 <p className="text-xs text-[var(--sk-text-secondary)] flex items-center gap-1.5">
                   <Lock className="w-3.5 h-3.5 text-[#8B5CF6] flex-shrink-0" />
-                  Your token is encrypted and never exposed in the browser.
+                  Your token is sent over HTTPS, encrypted on the backend, and never stored in the browser.
                 </p>
               </div>
 
               <div className="space-y-2">
-                <Label className="text-xs text-[var(--sk-text-secondary)]">Monobank API Token</Label>
-                <div className="flex gap-2">
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <Label className="text-xs text-[var(--sk-text-secondary)]">Monobank API Token</Label>
+                  <a
+                    href="https://api.monobank.ua/"
+                    target="_blank"
+                    rel="noreferrer"
+                    className="inline-flex items-center gap-1.5 text-xs font-medium text-[#8B5CF6] hover:text-[#7C3AED]"
+                  >
+                    Get token via QR
+                    <ExternalLink className="w-3.5 h-3.5" />
+                  </a>
+                </div>
+                <div className="flex flex-col sm:flex-row gap-2">
                   <Input
                     type="password"
                     placeholder="Enter your Monobank token"
@@ -209,10 +308,19 @@ export default function SettingsPage() {
                     onChange={(e) => setMonobankToken(e.target.value)}
                     className="h-10 sm:h-11 rounded-xl border-[var(--sk-border)] flex-1 text-sm"
                   />
-                  <Button className="h-10 sm:h-11 bg-black hover:bg-black/90 text-white rounded-full px-3 sm:px-5 text-xs sm:text-sm">
-                    Connect
+                  <Button
+                    disabled={!monobankToken.trim() || monobankLoading}
+                    onClick={handleConnectMonobank}
+                    className="h-10 sm:h-11 bg-black hover:bg-black/90 text-white rounded-full px-3 sm:px-5 text-xs sm:text-sm"
+                  >
+                    {monobankStatus?.connected ? 'Reconnect' : 'Connect'}
                   </Button>
                 </div>
+                <p className="text-xs text-[var(--sk-text-secondary)]">
+                  Open the Monobank API page, scan the QR in the Mono app, copy the personal token, and paste it here.
+                </p>
+                {monobankError && <p className="text-xs font-medium text-red-500">{monobankError}</p>}
+                {monobankMessage && <p className="text-xs font-medium text-green-600">{monobankMessage}</p>}
               </div>
             </div>
           )}

@@ -1,7 +1,6 @@
 import {
   mockUser,
   mockAIMessages, mockNotifications,
-  mockMonobankConnection,
   mockAnalyticsData, mockHistoryEvents,
 } from './data';
 import { supabase } from '@/lib/supabase/client';
@@ -13,6 +12,29 @@ import type {
 } from '@/types';
 
 const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+const apiBaseUrl = (import.meta.env.VITE_API_URL as string | undefined)?.replace(/\/$/, '') || 'https://api.skarbix.xyz';
+
+const backendRequest = async <T>(path: string, init?: RequestInit): Promise<T> => {
+  const { data } = await supabase.auth.getSession();
+  const token = data.session?.access_token;
+  if (!token) throw new Error('Not signed in');
+
+  const response = await fetch(`${apiBaseUrl}${path}`, {
+    ...init,
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${token}`,
+      ...init?.headers,
+    },
+  });
+
+  if (!response.ok) {
+    const errorBody = await response.json().catch(() => null) as { error?: { message?: string } } | null;
+    throw new Error(errorBody?.error?.message || 'Request failed');
+  }
+
+  return response.json() as Promise<T>;
+};
 
 const getUserId = async () => {
   const { data } = await supabase.auth.getUser();
@@ -683,24 +705,26 @@ export const markAllNotificationsRead = async () => {
 
 // Monobank
 export const fetchMonobankStatus = async (): Promise<MonobankConnection> => {
-  await delay(500);
-  return { ...mockMonobankConnection };
+  return backendRequest<MonobankConnection>('/v1/monobank/status');
 };
 
 export const connectMonobank = async (token: string) => {
-  void token;
-  await delay(1500);
-  return { connected: true, accountName: 'Monobank White', importedTransactions: 0 };
+  return backendRequest<MonobankConnection & { accountsImported: number }>('/v1/monobank/connect', {
+    method: 'POST',
+    body: JSON.stringify({ token }),
+  });
 };
 
 export const syncMonobank = async () => {
-  await delay(2000);
-  return { imported: 12 };
+  return backendRequest<{ imported: number; importedTransactions: number; accountsImported: number }>('/v1/monobank/sync', {
+    method: 'POST',
+  });
 };
 
 export const disconnectMonobank = async () => {
-  await delay(500);
-  return { connected: false };
+  return backendRequest<MonobankConnection>('/v1/monobank/disconnect', {
+    method: 'DELETE',
+  });
 };
 
 // Dashboard data
