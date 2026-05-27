@@ -114,7 +114,10 @@ export function IconPicker({ value, onChange }: IconPickerProps) {
       </div>
 
       {/* Grid */}
-      <div className="grid grid-cols-6 gap-1.5 max-h-[200px] overflow-y-auto rounded-xl bg-[var(--sk-border-light)] p-1.5">
+      <div
+        className="grid grid-cols-6 gap-1.5 max-h-[200px] overflow-y-auto overscroll-contain rounded-xl bg-[var(--sk-border-light)] p-1.5 pr-2"
+        onWheel={(event) => event.stopPropagation()}
+      >
         {icons.length === 0 ? (
           <div className="col-span-6 text-center text-xs text-[var(--sk-text-secondary)] py-4">No icons</div>
         ) : (

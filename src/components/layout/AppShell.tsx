@@ -27,9 +27,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       <div className="flex-1 flex flex-col min-h-screen lg:ml-[220px]">
         <TopBar />
         <main className="flex-1 pt-14 sm:pt-16 pb-6 sm:pb-8 px-3 sm:px-5 lg:px-8 max-w-[1440px] w-full mx-auto">
-          <div key={location.pathname} className="animate-fadeIn">
-            {children}
-          </div>
+          {children}
         </main>
       </div>
     </div>

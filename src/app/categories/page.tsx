@@ -126,29 +126,8 @@ export default function CategoriesPage() {
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: index * 0.04 }}
-              className="bg-[var(--sk-card)] rounded-[16px] sm:rounded-[20px] p-4 sm:p-5 border border-[var(--sk-border)] shadow-sm hover:shadow-md transition-shadow relative group"
+              className="bg-[var(--sk-card)] rounded-[16px] sm:rounded-[20px] p-4 sm:p-5 border border-[var(--sk-border)] shadow-sm hover:shadow-md transition-shadow"
             >
-              {!category.isProtected && (
-                <div className="absolute top-3 right-3 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                  <button
-                    onClick={() => {
-                      setEditCategory(category);
-                      setModalOpen(true);
-                    }}
-                    className="p-1.5 rounded-lg hover:bg-[var(--sk-border-light)] text-[var(--sk-text-secondary)] transition-colors"
-                    title={t('general.edit')}
-                  >
-                    <Pencil className="w-3.5 h-3.5" />
-                  </button>
-                  <button
-                    onClick={() => setDeleteTarget(category)}
-                    className="p-1.5 rounded-lg hover:bg-red-500/10 text-[var(--sk-text-secondary)] hover:text-red-500 transition-colors"
-                    title={t('general.delete')}
-                  >
-                    <Trash2 className="w-3.5 h-3.5" />
-                  </button>
-                </div>
-              )}
               <div className="flex items-center gap-3">
                 <div
                   className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0"
@@ -163,6 +142,27 @@ export default function CategoriesPage() {
                     {category.kind === 'income' ? t('categories.kindIncome') : t('categories.kindExpense')}
                   </p>
                 </div>
+                {!category.isProtected && (
+                  <div className="ml-auto flex shrink-0 items-center gap-1">
+                    <button
+                      onClick={() => {
+                        setEditCategory(category);
+                        setModalOpen(true);
+                      }}
+                      className="h-8 w-8 rounded-lg flex items-center justify-center hover:bg-[var(--sk-border-light)] text-[var(--sk-text-secondary)] transition-colors"
+                      title={t('general.edit')}
+                    >
+                      <Pencil className="w-3.5 h-3.5" />
+                    </button>
+                    <button
+                      onClick={() => setDeleteTarget(category)}
+                      className="h-8 w-8 rounded-lg flex items-center justify-center hover:bg-red-500/10 text-[var(--sk-text-secondary)] hover:text-red-500 transition-colors"
+                      title={t('general.delete')}
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                )}
               </div>
             </motion.div>
           ))}

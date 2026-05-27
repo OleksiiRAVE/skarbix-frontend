@@ -146,15 +146,8 @@ export default function AccountsPage() {
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: i * 0.05 }}
-              className="bg-[var(--sk-card)] rounded-[16px] sm:rounded-[20px] p-4 sm:p-5 border border-[var(--sk-border)] shadow-sm hover:shadow-md transition-shadow relative group"
+              className="bg-[var(--sk-card)] rounded-[16px] sm:rounded-[20px] p-4 sm:p-5 border border-[var(--sk-border)] shadow-sm hover:shadow-md transition-shadow"
             >
-              <button
-                onClick={() => handleEdit(account)}
-                className="absolute top-3 right-3 p-1.5 rounded-lg hover:bg-[var(--sk-border-light)] text-[var(--sk-text-secondary)] opacity-0 group-hover:opacity-100 transition-all"
-                title={t('general.edit')}
-              >
-                <Pencil className="w-3.5 h-3.5" />
-              </button>
               <div className="flex items-center gap-3 mb-3">
                 <div
                   className={`w-10 h-10 rounded-xl flex items-center justify-center ${account.color ? '' : typeColors[account.type] || 'bg-[var(--sk-border-light)]'}`}
@@ -166,6 +159,13 @@ export default function AccountsPage() {
                   <p className="text-sm font-semibold text-[var(--sk-text)] truncate">{account.name}</p>
                   <p className="text-xs text-[var(--sk-text-secondary)] capitalize">{account.type}</p>
                 </div>
+                <button
+                  onClick={() => handleEdit(account)}
+                  className="ml-auto h-8 w-8 rounded-lg flex shrink-0 items-center justify-center hover:bg-[var(--sk-border-light)] text-[var(--sk-text-secondary)] transition-colors"
+                  title={t('general.edit')}
+                >
+                  <Pencil className="w-3.5 h-3.5" />
+                </button>
               </div>
               <p className="text-lg sm:text-xl font-bold text-[var(--sk-text)]">{formatCurrency(account.balance)}</p>
               {account.number && (

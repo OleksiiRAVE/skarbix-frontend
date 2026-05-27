@@ -103,39 +103,6 @@ export function AddCategoryModal({ open, onOpenChange, onSuccess, category }: Ad
         </div>
 
         <div className="px-6 sm:px-8 space-y-5 max-h-[64vh] overflow-y-auto">
-          {!isEdit && templates.length > 0 && (
-            <div className="space-y-2">
-              <Label className="text-sm font-medium text-[var(--sk-text)]">{t('addCategory.templates')}</Label>
-              <div className="flex gap-2 overflow-x-auto pb-1">
-                {templates.map((template) => (
-                  <button
-                    key={template.key}
-                    onClick={() => applyTemplate(template)}
-                    className="shrink-0 h-10 rounded-full border border-[var(--sk-border)] bg-[var(--sk-border-light)] hover:bg-[var(--sk-border)] px-3 flex items-center gap-2 text-xs text-[var(--sk-text)] transition-colors"
-                  >
-                    <span
-                      className="w-6 h-6 rounded-lg flex items-center justify-center"
-                      style={{ backgroundColor: `${template.color}18`, color: template.color }}
-                    >
-                      <Icon icon={template.icon} className="w-3.5 h-3.5" />
-                    </span>
-                    {template.name}
-                  </button>
-                ))}
-              </div>
-            </div>
-          )}
-
-          <div className="space-y-1.5">
-            <Label className="text-sm font-medium text-[var(--sk-text)]">{t('addCategory.name')}</Label>
-            <Input
-              placeholder={t('addCategory.namePlaceholder')}
-              value={form.name}
-              onChange={(event) => setForm((current) => ({ ...current, name: event.target.value }))}
-              className="h-12 rounded-2xl border-[var(--sk-border)] bg-[var(--sk-border-light)] text-[var(--sk-text)] px-4"
-            />
-          </div>
-
           <div className="space-y-1.5">
             <Label className="text-sm font-medium text-[var(--sk-text)]">{t('addCategory.kind')}</Label>
             <div className="h-11 rounded-full border border-[var(--sk-border)] bg-[var(--sk-border-light)] p-0.5 grid grid-cols-2">
@@ -156,6 +123,16 @@ export function AddCategoryModal({ open, onOpenChange, onSuccess, category }: Ad
                 </button>
               ))}
             </div>
+          </div>
+
+          <div className="space-y-1.5">
+            <Label className="text-sm font-medium text-[var(--sk-text)]">{t('addCategory.name')}</Label>
+            <Input
+              placeholder={t('addCategory.namePlaceholder')}
+              value={form.name}
+              onChange={(event) => setForm((current) => ({ ...current, name: event.target.value }))}
+              className="h-12 rounded-2xl border-[var(--sk-border)] bg-[var(--sk-border-light)] text-[var(--sk-text)] px-4"
+            />
           </div>
 
           <div className="grid grid-cols-2 gap-3">
@@ -189,6 +166,29 @@ export function AddCategoryModal({ open, onOpenChange, onSuccess, category }: Ad
               </Popover>
             </div>
           </div>
+
+          {!isEdit && templates.length > 0 && (
+            <div className="space-y-2">
+              <Label className="text-sm font-medium text-[var(--sk-text)]">{t('addCategory.templates')}</Label>
+              <div className="flex gap-2 overflow-x-auto overscroll-x-contain pb-1">
+                {templates.map((template) => (
+                  <button
+                    key={template.key}
+                    onClick={() => applyTemplate(template)}
+                    className="shrink-0 h-10 rounded-full border border-[var(--sk-border)] bg-[var(--sk-border-light)] hover:bg-[var(--sk-border)] px-3 flex items-center gap-2 text-xs text-[var(--sk-text)] transition-colors"
+                  >
+                    <span
+                      className="w-6 h-6 rounded-lg flex items-center justify-center"
+                      style={{ backgroundColor: `${template.color}18`, color: template.color }}
+                    >
+                      <Icon icon={template.icon} className="w-3.5 h-3.5" />
+                    </span>
+                    {template.name}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
 
           <div className="rounded-2xl border border-[var(--sk-border)] bg-[var(--sk-border-light)] p-4 flex items-center gap-3">
             <div
