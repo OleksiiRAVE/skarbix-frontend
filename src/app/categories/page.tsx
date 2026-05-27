@@ -1,12 +1,23 @@
 import { useEffect, useState } from 'react';
 import { Icon } from '@iconify/react';
 import { motion } from 'framer-motion';
-import { Plus, Tags } from 'lucide-react';
+import { Lock, Pencil, Plus, Tags, Trash2 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
+import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { CardSkeleton } from '@/components/skeletons';
 import { AddCategoryModal } from '@/components/categories/AddCategoryModal';
-import { fetchCategories } from '@/lib/mock-api/api';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
+import { deleteCategory, fetchCategories } from '@/lib/mock-api/api';
 import type { Category } from '@/types';
 
 export default function CategoriesPage() {
@@ -14,11 +25,31 @@ export default function CategoriesPage() {
   const [loading, setLoading] = useState(true);
   const [categories, setCategories] = useState<Category[]>([]);
   const [modalOpen, setModalOpen] = useState(false);
+  const [editCategory, setEditCategory] = useState<Category | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<Category | null>(null);
 
   const loadCategories = async () => {
     const data = await fetchCategories();
     setCategories(data);
     setLoading(false);
+  };
+
+  const handleModalChange = (open: boolean) => {
+    setModalOpen(open);
+    if (!open) setEditCategory(null);
+  };
+
+  const handleDelete = async () => {
+    if (!deleteTarget) return;
+    try {
+      await deleteCategory(deleteTarget.id);
+      toast.success(t('categories.deleteToast'));
+      setDeleteTarget(null);
+      await loadCategories();
+    } catch (error) {
+      const message = error instanceof Error ? error.message : t('categories.deleteError');
+      toast.error(message);
+    }
   };
 
   useEffect(() => {
@@ -95,8 +126,29 @@ export default function CategoriesPage() {
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: index * 0.04 }}
-              className="bg-[var(--sk-card)] rounded-[16px] sm:rounded-[20px] p-4 sm:p-5 border border-[var(--sk-border)] shadow-sm hover:shadow-md transition-shadow"
+              className="bg-[var(--sk-card)] rounded-[16px] sm:rounded-[20px] p-4 sm:p-5 border border-[var(--sk-border)] shadow-sm hover:shadow-md transition-shadow relative group"
             >
+              {!category.isProtected && (
+                <div className="absolute top-3 right-3 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                  <button
+                    onClick={() => {
+                      setEditCategory(category);
+                      setModalOpen(true);
+                    }}
+                    className="p-1.5 rounded-lg hover:bg-[var(--sk-border-light)] text-[var(--sk-text-secondary)] transition-colors"
+                    title={t('general.edit')}
+                  >
+                    <Pencil className="w-3.5 h-3.5" />
+                  </button>
+                  <button
+                    onClick={() => setDeleteTarget(category)}
+                    className="p-1.5 rounded-lg hover:bg-red-500/10 text-[var(--sk-text-secondary)] hover:text-red-500 transition-colors"
+                    title={t('general.delete')}
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              )}
               <div className="flex items-center gap-3">
                 <div
                   className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0"
@@ -106,7 +158,8 @@ export default function CategoriesPage() {
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-semibold text-[var(--sk-text)] truncate">{category.name}</p>
-                  <p className="text-xs text-[var(--sk-text-secondary)]">
+                  <p className="text-xs text-[var(--sk-text-secondary)] flex items-center gap-1">
+                    {category.isProtected && <Lock className="w-3 h-3" />}
                     {category.kind === 'income' ? t('categories.kindIncome') : t('categories.kindExpense')}
                   </p>
                 </div>
@@ -118,9 +171,28 @@ export default function CategoriesPage() {
 
       <AddCategoryModal
         open={modalOpen}
-        onOpenChange={setModalOpen}
+        onOpenChange={handleModalChange}
         onSuccess={loadCategories}
+        category={editCategory}
       />
+      <AlertDialog open={!!deleteTarget} onOpenChange={(open) => !open && setDeleteTarget(null)}>
+        <AlertDialogContent className="bg-[var(--sk-card)] text-[var(--sk-text)] border-[var(--sk-border)] rounded-[20px]">
+          <AlertDialogHeader>
+            <AlertDialogTitle>{t('categories.deleteTitle')}</AlertDialogTitle>
+            <AlertDialogDescription className="text-[var(--sk-text-secondary)]">
+              {t('categories.deleteDescription', { name: deleteTarget?.name })}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel className="rounded-full border-[var(--sk-border)] text-[var(--sk-text)]">
+              {t('general.cancel')}
+            </AlertDialogCancel>
+            <AlertDialogAction onClick={handleDelete} className="rounded-full bg-red-500 text-white hover:bg-red-600">
+              {t('general.delete')}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

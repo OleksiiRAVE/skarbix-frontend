@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Plus, Info, Pencil } from 'lucide-react';
+import { Plus, Info, Pencil, Wallet } from 'lucide-react';
 import { Icon } from '@iconify/react';
 import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/button';
@@ -113,9 +113,30 @@ export default function AccountsPage() {
         <p className="text-2xl sm:text-3xl font-bold text-[var(--sk-text)]">{formatCurrency(totalBalance)}</p>
       </motion.div>
 
-      {/* Accounts Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
-        {accounts.map((account, i) => {
+      {accounts.length === 0 ? (
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="min-h-[280px] rounded-[20px] border border-dashed border-[var(--sk-border)] bg-[var(--sk-card)] flex flex-col items-center justify-center text-center px-6"
+        >
+          <div className="w-14 h-14 rounded-2xl bg-[#8B5CF6]/10 text-[#8B5CF6] flex items-center justify-center mb-4">
+            <Wallet className="w-6 h-6" />
+          </div>
+          <h2 className="text-base sm:text-lg font-semibold text-[var(--sk-text)]">{t('accounts.emptyTitle')}</h2>
+          <p className="text-xs sm:text-sm text-[var(--sk-text-secondary)] mt-1 max-w-[360px]">
+            {t('accounts.emptySubtitle')}
+          </p>
+          <Button
+            onClick={() => setModalOpen(true)}
+            className="mt-5 h-10 bg-[#8B5CF6] hover:bg-[#7C3AED] text-white rounded-full text-sm font-medium px-5"
+          >
+            <Plus className="w-4 h-4 mr-1.5" />
+            {t('addAccount.title')}
+          </Button>
+        </motion.div>
+      ) : (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
+          {accounts.map((account, i) => {
           const iconStyle = account.color
             ? { backgroundColor: `${account.color}18`, color: account.color }
             : undefined;
@@ -152,8 +173,9 @@ export default function AccountsPage() {
               )}
             </motion.div>
           );
-        })}
-      </div>
+          })}
+        </div>
+      )}
 
       <AddAccountModal
         open={modalOpen}

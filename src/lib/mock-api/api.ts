@@ -6,7 +6,7 @@ import {
 } from './data';
 import { supabase } from '@/lib/supabase/client';
 import type {
-  Account, Transaction, Category, Budget, Debt, AIMessage,
+  Account, Transaction, Category, CategoryTemplate, Subscription, Budget, Debt, AIMessage,
   Notification, MonobankConnection, CashFlowData,
   TransactionOverviewData, AnalyticsData, HistoryEvent,
   CapitalData,
@@ -49,14 +49,64 @@ const toCategory = (row: {
   color: string | null;
   icon: string | null;
   is_system: boolean;
+  is_protected?: boolean | null;
+  template_key?: string | null;
 }): Category => ({
   id: row.id,
   name: row.name,
-  icon: row.icon || 'Tag',
+  icon: row.icon || 'lucide:tag',
   color: row.color || '#8B5CF6',
   type: row.is_system ? 'system' : 'custom',
   kind: row.type === 'income' ? 'income' : 'expense',
+  isProtected: row.is_protected || false,
+  templateKey: row.template_key || undefined,
   monthlySpent: 0,
+});
+
+const toCategoryTemplate = (row: {
+  key: string;
+  name: string;
+  type: string;
+  color: string;
+  icon: string;
+}): CategoryTemplate => ({
+  key: row.key,
+  name: row.name,
+  kind: row.type === 'income' ? 'income' : 'expense',
+  color: row.color,
+  icon: row.icon,
+});
+
+const toSubscription = (row: {
+  id: string;
+  user_id: string;
+  category_id: string | null;
+  account_id: string | null;
+  name: string;
+  amount: number | string;
+  currency: string;
+  period: string;
+  next_payment_on: string;
+  color: string | null;
+  icon: string | null;
+  notes: string | null;
+  is_active: boolean;
+  created_at: string;
+}): Subscription => ({
+  id: row.id,
+  userId: row.user_id,
+  categoryId: row.category_id || undefined,
+  accountId: row.account_id || undefined,
+  name: row.name,
+  amount: Number(row.amount),
+  currency: row.currency,
+  period: row.period === 'weekly' || row.period === 'yearly' ? row.period : 'monthly',
+  nextPaymentOn: row.next_payment_on,
+  color: row.color || undefined,
+  icon: row.icon || undefined,
+  notes: row.notes || undefined,
+  isActive: row.is_active,
+  createdAt: row.created_at,
 });
 
 const toTransaction = (row: {
@@ -344,8 +394,9 @@ export const fetchCategories = async (): Promise<Category[]> => {
 
   const { data, error } = await supabase
     .from('categories')
-    .select('id,name,type,color,icon,is_system')
+    .select('id,name,type,color,icon,is_system,is_protected,template_key')
     .eq('user_id', userId)
+    .order('is_protected', { ascending: false })
     .order('created_at', { ascending: false });
 
   if (error) throw error;
@@ -366,11 +417,144 @@ export const createCategory = async (data: Partial<Category>) => {
       icon: data.icon || 'lucide:tag',
       is_system: false,
     })
-    .select('id,name,type,color,icon,is_system')
+    .select('id,name,type,color,icon,is_system,is_protected,template_key')
     .single();
 
   if (error) throw error;
   return toCategory(inserted);
+};
+
+export const updateCategory = async (id: string, data: Partial<Category>) => {
+  const userId = await getUserId();
+  if (!userId) throw new Error('Not signed in');
+
+  const payload: Record<string, unknown> = {};
+  if (data.name !== undefined) payload.name = data.name;
+  if (data.kind !== undefined) payload.type = data.kind;
+  if (data.color !== undefined) payload.color = data.color;
+  if (data.icon !== undefined) payload.icon = data.icon;
+
+  const { data: updated, error } = await supabase
+    .from('categories')
+    .update(payload)
+    .eq('id', id)
+    .eq('user_id', userId)
+    .eq('is_protected', false)
+    .select('id,name,type,color,icon,is_system,is_protected,template_key')
+    .single();
+
+  if (error) throw error;
+  return toCategory(updated);
+};
+
+export const deleteCategory = async (id: string) => {
+  const userId = await getUserId();
+  if (!userId) throw new Error('Not signed in');
+
+  const { error } = await supabase
+    .from('categories')
+    .delete()
+    .eq('id', id)
+    .eq('user_id', userId)
+    .eq('is_protected', false);
+
+  if (error) throw error;
+  return true;
+};
+
+export const fetchCategoryTemplates = async (): Promise<CategoryTemplate[]> => {
+  const { data, error } = await supabase
+    .from('category_templates')
+    .select('key,name,type,color,icon')
+    .order('sort_order', { ascending: true });
+
+  if (error) throw error;
+  return data.map(toCategoryTemplate);
+};
+
+// Subscriptions
+export const fetchSubscriptions = async (): Promise<Subscription[]> => {
+  const userId = await getUserId();
+  if (!userId) return [];
+
+  const { data, error } = await supabase
+    .from('subscriptions')
+    .select('id,user_id,category_id,account_id,name,amount,currency,period,next_payment_on,color,icon,notes,is_active,created_at')
+    .eq('user_id', userId)
+    .eq('is_active', true)
+    .order('next_payment_on', { ascending: true });
+
+  if (error) throw error;
+  return data.map(toSubscription);
+};
+
+export const createSubscription = async (data: Partial<Subscription>) => {
+  const userId = await getUserId();
+  if (!userId) throw new Error('Not signed in');
+
+  const { data: inserted, error } = await supabase
+    .from('subscriptions')
+    .insert({
+      user_id: userId,
+      category_id: data.categoryId || null,
+      account_id: data.accountId || null,
+      name: data.name || 'Subscription',
+      amount: data.amount || 0,
+      currency: data.currency || 'UAH',
+      period: data.period || 'monthly',
+      next_payment_on: data.nextPaymentOn || new Date().toISOString().slice(0, 10),
+      color: data.color || '#8B5CF6',
+      icon: data.icon || 'lucide:repeat',
+      notes: data.notes || null,
+    })
+    .select('id,user_id,category_id,account_id,name,amount,currency,period,next_payment_on,color,icon,notes,is_active,created_at')
+    .single();
+
+  if (error) throw error;
+  return toSubscription(inserted);
+};
+
+export const updateSubscription = async (id: string, data: Partial<Subscription>) => {
+  const userId = await getUserId();
+  if (!userId) throw new Error('Not signed in');
+
+  const payload: Record<string, unknown> = {};
+  if (data.categoryId !== undefined) payload.category_id = data.categoryId || null;
+  if (data.accountId !== undefined) payload.account_id = data.accountId || null;
+  if (data.name !== undefined) payload.name = data.name;
+  if (data.amount !== undefined) payload.amount = data.amount;
+  if (data.currency !== undefined) payload.currency = data.currency;
+  if (data.period !== undefined) payload.period = data.period;
+  if (data.nextPaymentOn !== undefined) payload.next_payment_on = data.nextPaymentOn;
+  if (data.color !== undefined) payload.color = data.color;
+  if (data.icon !== undefined) payload.icon = data.icon;
+  if (data.notes !== undefined) payload.notes = data.notes || null;
+  if (data.isActive !== undefined) payload.is_active = data.isActive;
+
+  const { data: updated, error } = await supabase
+    .from('subscriptions')
+    .update(payload)
+    .eq('id', id)
+    .eq('user_id', userId)
+    .select('id,user_id,category_id,account_id,name,amount,currency,period,next_payment_on,color,icon,notes,is_active,created_at')
+    .single();
+
+  if (error) throw error;
+  return toSubscription(updated);
+};
+
+export const deleteSubscription = async (id: string) => {
+  const userId = await getUserId();
+  if (!userId) throw new Error('Not signed in');
+
+  const { error } = await supabase
+    .from('subscriptions')
+    .update({ is_active: false })
+    .eq('id', id)
+    .eq('user_id', userId);
+
+  if (error) throw error;
+  return true;
 };
 
 // Budgets

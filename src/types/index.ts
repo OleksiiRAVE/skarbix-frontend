@@ -47,9 +47,36 @@ export interface Category {
   color: string;
   type: 'system' | 'custom';
   kind: 'income' | 'expense';
+  isProtected?: boolean;
+  templateKey?: string;
   monthlyBudget?: number;
   monthlySpent: number;
   mccCodes?: string[];
+}
+
+export interface CategoryTemplate {
+  key: string;
+  name: string;
+  kind: 'income' | 'expense';
+  color: string;
+  icon: string;
+}
+
+export interface Subscription {
+  id: string;
+  userId: string;
+  categoryId?: string;
+  accountId?: string;
+  name: string;
+  amount: number;
+  currency: string;
+  period: 'weekly' | 'monthly' | 'yearly';
+  nextPaymentOn: string;
+  color?: string;
+  icon?: string;
+  notes?: string;
+  isActive: boolean;
+  createdAt: string;
 }
 
 export interface Budget {
