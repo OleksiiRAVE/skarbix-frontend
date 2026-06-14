@@ -18,14 +18,15 @@ const backendRequest = async <T>(path: string, init?: RequestInit): Promise<T> =
   const { data } = await supabase.auth.getSession();
   const token = data.session?.access_token;
   if (!token) throw new Error('Not signed in');
+  const headers = new Headers(init?.headers);
+  headers.set('Authorization', `Bearer ${token}`);
+  if (init?.body !== undefined && !headers.has('Content-Type')) {
+    headers.set('Content-Type', 'application/json');
+  }
 
   const response = await fetch(`${apiBaseUrl}${path}`, {
     ...init,
-    headers: {
-      'Content-Type': 'application/json',
-      Authorization: `Bearer ${token}`,
-      ...init?.headers,
-    },
+    headers,
   });
 
   if (!response.ok) {
