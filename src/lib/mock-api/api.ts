@@ -671,17 +671,16 @@ export const fetchAIMessages = async (): Promise<AIMessage[]> => {
   return mockAIMessages.map((m) => ({ ...m }));
 };
 
-export const sendAIMessage = async (content: string): Promise<AIMessage> => {
-  await delay(1200);
-  const response: AIMessage = {
-    id: `ai${Date.now()}`,
-    role: 'assistant',
-    content: `I understand: "${content}". I've processed your request and updated your records accordingly. Is there anything else you'd like me to help you with?`,
-    timestamp: new Date().toISOString(),
-  };
-  mockAIMessages.push(response);
-  return response;
-};
+export const sendAIMessage = async (
+  content: string,
+  history: Pick<AIMessage, 'role' | 'content'>[] = [],
+): Promise<AIMessage> => backendRequest<AIMessage>('/v1/ai/chat', {
+  method: 'POST',
+  body: JSON.stringify({
+    message: content,
+    history: history.slice(-12),
+  }),
+});
 
 // Notifications
 export const fetchNotifications = async (): Promise<Notification[]> => {

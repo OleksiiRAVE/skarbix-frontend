@@ -7,8 +7,8 @@ import {
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { formatCurrency } from '@/lib/utils/format';
-import { sendAIMessage } from '@/lib/mock-api/api';
-import { mockAIMessages } from '@/lib/mock-api/data';
+import { createTransaction, fetchCategories, sendAIMessage } from '@/lib/mock-api/api';
+import { toast } from 'sonner';
 import type { AIMessage } from '@/types';
 
 const suggestedPrompts = [
@@ -19,11 +19,18 @@ const suggestedPrompts = [
 ];
 
 export default function AIAssistantPage() {
-  const [messages, setMessages] = useState<AIMessage[]>(() => mockAIMessages.map((m) => ({ ...m })));
+  const [messages, setMessages] = useState<AIMessage[]>([{
+    id: 'welcome',
+    role: 'assistant',
+    content: 'Привет! Я помогу разобрать расходы, бюджеты и долги. Изменения подтверждаешь только ты.',
+    timestamp: new Date().toISOString(),
+  }]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
   const [recording, setRecording] = useState(false);
   const [typing, setTyping] = useState(false);
+  const [confirmingId, setConfirmingId] = useState<string | null>(null);
+  const [confirmedIds, setConfirmedIds] = useState<Set<string>>(() => new Set());
   const bottomRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
@@ -43,24 +50,53 @@ export default function AIAssistantPage() {
     setMessages((prev) => [...prev, userMsg]);
     setInput('');
     setTyping(true);
-
-    setTimeout(async () => {
+    setLoading(true);
+    try {
+      const response = await sendAIMessage(
+        userMsg.content,
+        messages.filter((message) => message.id !== 'welcome').map(({ role, content }) => ({ role, content })),
+      );
+      setMessages((prev) => [...prev, response]);
+    } catch (error) {
+      const fallback: AIMessage = {
+        id: `ai${Date.now()}`,
+        role: 'assistant',
+        content: error instanceof Error ? error.message : 'Не удалось получить ответ. Попробуй еще раз.',
+        timestamp: new Date().toISOString(),
+      };
+      setMessages((prev) => [...prev, fallback]);
+    } finally {
       setTyping(false);
-      setLoading(true);
-      try {
-        const response = await sendAIMessage(userMsg.content);
-        setMessages((prev) => [...prev, response]);
-      } catch {
-        const fallback: AIMessage = {
-          id: `ai${Date.now()}`,
-          role: 'assistant',
-          content: "I'm sorry, I couldn't process that. Could you try rephrasing?",
-          timestamp: new Date().toISOString(),
-        };
-        setMessages((prev) => [...prev, fallback]);
-      }
       setLoading(false);
-    }, 1500);
+    }
+  };
+
+  const handleConfirmTransaction = async (message: AIMessage) => {
+    if (!message.parsedTransaction || confirmingId) return;
+    setConfirmingId(message.id);
+    try {
+      const categories = await fetchCategories();
+      const normalizedCategory = message.parsedTransaction.category.trim().toLocaleLowerCase();
+      const category = categories.find((item) => (
+        item.kind === message.parsedTransaction?.type
+        && item.name.trim().toLocaleLowerCase() === normalizedCategory
+      ));
+      await createTransaction({
+        amount: message.parsedTransaction.amount,
+        type: message.parsedTransaction.type,
+        category: category?.name || 'Uncategorized',
+        categoryId: category?.id || 'uncategorized',
+        merchant: message.parsedTransaction.merchant,
+        date: message.parsedTransaction.date,
+        source: 'ai',
+      });
+      setConfirmedIds((current) => new Set(current).add(message.id));
+      toast.success('Транзакция добавлена');
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Не удалось добавить транзакцию');
+    } finally {
+      setConfirmingId(null);
+    }
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -166,8 +202,16 @@ export default function AIAssistantPage() {
                     </div>
                   </div>
                   <div className="flex gap-1.5 sm:gap-2">
-                    <Button size="sm" className="h-7 sm:h-8 bg-green-500/100 hover:bg-green-600 text-white rounded-full text-[10px] sm:text-xs px-2 sm:px-3">
-                      <Check className="w-3 h-3 mr-0.5 sm:mr-1" /> Confirm
+                    <Button
+                      size="sm"
+                      disabled={confirmingId === msg.id || confirmedIds.has(msg.id)}
+                      onClick={() => handleConfirmTransaction(msg)}
+                      className="h-7 sm:h-8 bg-green-500/100 hover:bg-green-600 text-white rounded-full text-[10px] sm:text-xs px-2 sm:px-3"
+                    >
+                      {confirmingId === msg.id
+                        ? <Loader2 className="w-3 h-3 mr-0.5 sm:mr-1 animate-spin" />
+                        : <Check className="w-3 h-3 mr-0.5 sm:mr-1" />}
+                      {confirmedIds.has(msg.id) ? 'Added' : 'Confirm'}
                     </Button>
                     <Button size="sm" variant="outline" className="h-7 sm:h-8 rounded-full text-[10px] sm:text-xs px-2 sm:px-3 border-[var(--sk-border)]">
                       <Pencil className="w-3 h-3 mr-0.5 sm:mr-1" /> Edit
