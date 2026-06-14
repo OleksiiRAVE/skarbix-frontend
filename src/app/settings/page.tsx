@@ -83,7 +83,15 @@ export default function SettingsPage() {
   useEffect(() => {
     if (monobankStatus?.status !== 'pending') return;
 
+    let attempts = 0;
     const interval = window.setInterval(() => {
+      attempts += 1;
+      if (attempts > 60) {
+        window.clearInterval(interval);
+        setMonobankError('Authorization timed out. Start a new Monobank connection.');
+        return;
+      }
+
       void confirmMonobankAuthorization()
         .then((status) => {
           setMonobankStatus(status);
@@ -95,7 +103,7 @@ export default function SettingsPage() {
         .catch((error) => {
           setMonobankError(error instanceof Error ? error.message : 'Could not confirm Monobank access');
         });
-    }, 4000);
+    }, 10000);
 
     return () => window.clearInterval(interval);
   }, [monobankStatus?.status]);

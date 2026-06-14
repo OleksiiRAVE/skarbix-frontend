@@ -82,6 +82,12 @@ categories, debts, subscriptions, analytics, capital, calendar, budgets, goals,
 AI assistant, payments, history, settings, auth, onboarding, landing and static
 pages.
 
+## Monobank
+
+Connected Banks uses the approved Monobank provider API. Users authorize with
+a locally rendered QR/deep link, and the normal UI never asks for a personal
+API token.
+
 ## Important
 
 Do not put runtime secrets in frontend code. Anything included in a frontend
