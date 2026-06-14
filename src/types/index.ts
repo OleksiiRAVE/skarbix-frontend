@@ -161,11 +161,14 @@ export interface AnalyticsData {
 
 export interface MonobankConnection {
   connected: boolean;
-  token?: string;
+  status: 'disconnected' | 'pending' | 'connected' | 'revoked' | 'error';
+  authMode?: 'personal_token' | 'provider';
+  acceptUrl?: string;
   lastSync?: string;
   webhookEnabled: boolean;
   importedTransactions: number;
   accountName?: string;
+  providerAvailable?: boolean;
 }
 
 export interface CashFlowData {

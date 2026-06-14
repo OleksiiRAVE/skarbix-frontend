@@ -241,6 +241,8 @@ export const mockNotifications: Notification[] = [
 
 export const mockMonobankConnection: MonobankConnection = {
   connected: true,
+  status: 'connected',
+  authMode: 'provider',
   lastSync: '2025-05-25T08:00:00',
   webhookEnabled: true,
   importedTransactions: 342,

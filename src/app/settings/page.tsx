@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import { useSearchParams } from 'react-router';
+import { QRCodeSVG } from 'qrcode.react';
 import {
   User, Shield, CreditCard, Bell, Palette, Database, Trash2,
   Moon, Sun, Monitor, Lock, Key, Eye, EyeOff, ExternalLink, RefreshCw,
@@ -12,7 +13,8 @@ import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { useAppStore } from '@/store';
 import { Switch } from '@/components/ui/switch';
 import {
-  connectMonobank,
+  authorizeMonobank,
+  confirmMonobankAuthorization,
   disconnectMonobank,
   fetchMonobankStatus,
   syncMonobank,
@@ -38,7 +40,6 @@ export default function SettingsPage() {
     requestedSection && sectionIds.has(requestedSection) ? requestedSection : 'profile',
   );
   const [deleteModal, setDeleteModal] = useState(false);
-  const [monobankToken, setMonobankToken] = useState('');
   const [monobankStatus, setMonobankStatus] = useState<MonobankConnection | null>(null);
   const [monobankLoading, setMonobankLoading] = useState(false);
   const [monobankError, setMonobankError] = useState('');
@@ -64,7 +65,14 @@ export default function SettingsPage() {
         if (mounted) setMonobankStatus(status);
       })
       .catch(() => {
-        if (mounted) setMonobankStatus({ connected: false, webhookEnabled: false, importedTransactions: 0 });
+        if (mounted) {
+          setMonobankStatus({
+            connected: false,
+            status: 'disconnected',
+            webhookEnabled: false,
+            importedTransactions: 0,
+          });
+        }
       });
 
     return () => {
@@ -72,17 +80,36 @@ export default function SettingsPage() {
     };
   }, []);
 
-  const handleConnectMonobank = async () => {
+  useEffect(() => {
+    if (monobankStatus?.status !== 'pending') return;
+
+    const interval = window.setInterval(() => {
+      void confirmMonobankAuthorization()
+        .then((status) => {
+          setMonobankStatus(status);
+          if (status.connected) {
+            setMonobankMessage(`Connected. Imported ${status.importedTransactions} transactions.`);
+            setMonobankError('');
+          }
+        })
+        .catch((error) => {
+          setMonobankError(error instanceof Error ? error.message : 'Could not confirm Monobank access');
+        });
+    }, 4000);
+
+    return () => window.clearInterval(interval);
+  }, [monobankStatus?.status]);
+
+  const handleAuthorizeMonobank = async () => {
     setMonobankError('');
     setMonobankMessage('');
     setMonobankLoading(true);
     try {
-      const status = await connectMonobank(monobankToken);
+      const status = await authorizeMonobank();
       setMonobankStatus(status);
-      setMonobankToken('');
-      setMonobankMessage(`Connected. Imported ${status.importedTransactions} transactions.`);
+      setMonobankMessage('Scan the QR code in Monobank and approve access.');
     } catch (error) {
-      setMonobankError(error instanceof Error ? error.message : 'Could not connect Monobank');
+      setMonobankError(error instanceof Error ? error.message : 'Could not start Monobank authorization');
     } finally {
       setMonobankLoading(false);
     }
@@ -258,7 +285,9 @@ export default function SettingsPage() {
                       </div>
                     </div>
                   </div>
-                  <span className="text-xs text-[var(--sk-text-secondary)]">{monobankStatus?.accountName || 'Personal API'}</span>
+                  <span className="text-xs text-[var(--sk-text-secondary)]">
+                    {monobankStatus?.accountName || (monobankStatus?.status === 'pending' ? 'Waiting for approval' : 'Provider API')}
+                  </span>
                 </div>
 
                 <div className="grid grid-cols-2 gap-2 sm:gap-3 mb-3 sm:mb-4 text-xs sm:text-sm">
@@ -299,44 +328,77 @@ export default function SettingsPage() {
               <div className="bg-[var(--sk-border-light)] rounded-xl sm:rounded-2xl p-3 sm:p-4 border border-[var(--sk-border)]">
                 <p className="text-xs text-[var(--sk-text-secondary)] flex items-center gap-1.5">
                   <Lock className="w-3.5 h-3.5 text-[#8B5CF6] flex-shrink-0" />
-                  Your token is sent over HTTPS, encrypted on the backend, and never stored in the browser.
+                  Authorization happens in Monobank. Skarbix never asks for or stores your personal API token.
                 </p>
               </div>
 
-              <div className="space-y-2">
-                <div className="flex flex-wrap items-center justify-between gap-2">
-                  <Label className="text-xs text-[var(--sk-text-secondary)]">Monobank API Token</Label>
-                  <a
-                    href="https://api.monobank.ua/"
-                    target="_blank"
-                    rel="noreferrer"
-                    className="inline-flex items-center gap-1.5 text-xs font-medium text-[#8B5CF6] hover:text-[#7C3AED]"
-                  >
-                    Get token via QR
-                    <ExternalLink className="w-3.5 h-3.5" />
-                  </a>
-                </div>
-                <div className="flex flex-col sm:flex-row gap-2">
-                  <Input
-                    type="password"
-                    placeholder="Enter your Monobank token"
-                    value={monobankToken}
-                    onChange={(e) => setMonobankToken(e.target.value)}
-                    className="h-10 sm:h-11 rounded-xl border-[var(--sk-border)] flex-1 text-sm"
-                  />
-                  <Button
-                    disabled={!monobankToken.trim() || monobankLoading}
-                    onClick={handleConnectMonobank}
-                    className="h-10 sm:h-11 bg-black hover:bg-black/90 text-white rounded-full px-3 sm:px-5 text-xs sm:text-sm"
-                  >
-                    {monobankStatus?.connected ? 'Reconnect' : 'Connect'}
-                  </Button>
-                </div>
-                <p className="text-xs text-[var(--sk-text-secondary)]">
-                  Open the Monobank API page, scan the QR in the Mono app, copy the personal token, and paste it here.
-                </p>
+              <div className="space-y-3">
+                {monobankStatus?.status === 'pending' && monobankStatus.acceptUrl ? (
+                  <div className="rounded-2xl border border-[var(--sk-border)] bg-white p-4 sm:p-5">
+                    <div className="flex flex-col sm:flex-row items-center gap-4 sm:gap-5">
+                      <div className="rounded-2xl border border-gray-200 bg-white p-3 shadow-sm">
+                        <QRCodeSVG
+                          value={monobankStatus.acceptUrl}
+                          size={176}
+                          level="M"
+                          marginSize={1}
+                          aria-label="Monobank authorization QR code"
+                        />
+                      </div>
+                      <div className="text-center sm:text-left space-y-3">
+                        <div>
+                          <p className="text-sm font-semibold text-gray-950">Approve access in Monobank</p>
+                          <p className="mt-1 text-xs leading-relaxed text-gray-500">
+                            Scan this QR with your phone or open Monobank directly. This page checks approval automatically.
+                          </p>
+                        </div>
+                        <Button asChild className="h-10 rounded-full bg-black px-5 text-sm text-white hover:bg-black/90">
+                          <a href={monobankStatus.acceptUrl} target="_blank" rel="noreferrer">
+                            Open Monobank
+                            <ExternalLink className="ml-2 h-3.5 w-3.5" />
+                          </a>
+                        </Button>
+                        <div className="flex items-center justify-center sm:justify-start gap-2 text-xs text-[#8B5CF6]">
+                          <RefreshCw className="h-3.5 w-3.5 animate-spin" />
+                          Waiting for approval
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 rounded-2xl border border-[var(--sk-border)] p-4">
+                    <div>
+                      <p className="text-sm font-medium text-[var(--sk-text)]">Secure bank connection</p>
+                      <p className="mt-1 text-xs text-[var(--sk-text-secondary)]">
+                        Approve read-only access in Monobank. New transactions will arrive automatically.
+                      </p>
+                    </div>
+                    <Button
+                      disabled={monobankLoading || monobankStatus?.connected || monobankStatus?.providerAvailable === false}
+                      onClick={handleAuthorizeMonobank}
+                      className="h-10 shrink-0 rounded-full bg-black px-5 text-sm text-white hover:bg-black/90"
+                    >
+                      {monobankLoading ? (
+                        <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
+                      ) : (
+                        <CreditCard className="mr-2 h-4 w-4" />
+                      )}
+                      Connect Monobank
+                    </Button>
+                  </div>
+                )}
+                {monobankStatus?.providerAvailable === false && (
+                  <p className="text-xs font-medium text-amber-600">
+                    Monobank provider connection is temporarily unavailable.
+                  </p>
+                )}
                 {monobankError && <p className="text-xs font-medium text-red-500">{monobankError}</p>}
                 {monobankMessage && <p className="text-xs font-medium text-green-600">{monobankMessage}</p>}
+                {monobankStatus?.connected && monobankStatus.authMode === 'provider' && (
+                  <p className="text-xs text-[var(--sk-text-secondary)]">
+                    Live updates are {monobankStatus.webhookEnabled ? 'enabled' : 'pending webhook setup'}.
+                  </p>
+                )}
               </div>
             </div>
           )}

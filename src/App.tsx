@@ -1,38 +1,51 @@
+import { lazy, Suspense } from 'react';
 import { Routes, Route, Navigate } from 'react-router';
 import { AppShell } from '@/components/layout/AppShell';
 import { RedirectAuthed, RequireAuth } from '@/components/auth/AuthRoute';
 
 // Dashboard (app) pages
-import DashboardPage from '@/app/dashboard/page';
-import TransactionsPage from '@/app/transactions/page';
-import AccountsPage from '@/app/accounts/page';
-import CategoriesPage from '@/app/categories/page';
-import DebtsPage from '@/app/debts/page';
-import SubscriptionsPage from '@/app/subscriptions/page';
-import AnalyticsPage from '@/app/analytics/page';
-import CapitalPage from '@/app/capital/page';
-import CalendarPage from '@/app/calendar/page';
-import BudgetsPage from '@/app/budgets/page';
-import GoalsPage from '@/app/goals/page';
-import AIAssistantPage from '@/app/ai-assistant/page';
-import PaymentsPage from '@/app/payments/page';
-import HistoryPage from '@/app/history/page';
-import SettingsPage from '@/app/settings/page';
+const DashboardPage = lazy(() => import('@/app/dashboard/page'));
+const TransactionsPage = lazy(() => import('@/app/transactions/page'));
+const AccountsPage = lazy(() => import('@/app/accounts/page'));
+const CategoriesPage = lazy(() => import('@/app/categories/page'));
+const DebtsPage = lazy(() => import('@/app/debts/page'));
+const SubscriptionsPage = lazy(() => import('@/app/subscriptions/page'));
+const AnalyticsPage = lazy(() => import('@/app/analytics/page'));
+const CapitalPage = lazy(() => import('@/app/capital/page'));
+const CalendarPage = lazy(() => import('@/app/calendar/page'));
+const BudgetsPage = lazy(() => import('@/app/budgets/page'));
+const GoalsPage = lazy(() => import('@/app/goals/page'));
+const AIAssistantPage = lazy(() => import('@/app/ai-assistant/page'));
+const PaymentsPage = lazy(() => import('@/app/payments/page'));
+const HistoryPage = lazy(() => import('@/app/history/page'));
+const SettingsPage = lazy(() => import('@/app/settings/page'));
 
 // Landing & static pages
-import LandingPage from '@/app/landing/page';
-import AuthPage from '@/app/auth/page';
-import OnboardingPage from '@/app/onboarding/page';
-import HelpCenterPage from '@/app/help/page';
-import ContactPage from '@/app/contact/page';
-import PrivacyPage from '@/app/privacy/page';
-import TermsPage from '@/app/terms/page';
-import CookiesPage from '@/app/cookies/page';
+const LandingPage = lazy(() => import('@/app/landing/page'));
+const AuthPage = lazy(() => import('@/app/auth/page'));
+const OnboardingPage = lazy(() => import('@/app/onboarding/page'));
+const HelpCenterPage = lazy(() => import('@/app/help/page'));
+const ContactPage = lazy(() => import('@/app/contact/page'));
+const PrivacyPage = lazy(() => import('@/app/privacy/page'));
+const TermsPage = lazy(() => import('@/app/terms/page'));
+const CookiesPage = lazy(() => import('@/app/cookies/page'));
 
 const MARKETING_HOSTS = new Set(['skarbix.xyz', 'www.skarbix.xyz']);
 
 function isMarketingHost() {
   return MARKETING_HOSTS.has(window.location.hostname.toLowerCase());
+}
+
+function RouteFallback() {
+  return (
+    <div className="min-h-screen bg-[var(--sk-bg)] flex items-center justify-center px-6">
+      <div
+        className="h-9 w-9 animate-spin rounded-full border-2 border-[var(--sk-border)] border-t-[#8B5CF6]"
+        role="status"
+        aria-label="Loading page"
+      />
+    </div>
+  );
 }
 
 // App layout wrapper (with sidebar + topbar)
@@ -85,41 +98,43 @@ function AppSurface({ children }: { children: React.ReactNode }) {
 
 export default function App() {
   return (
-    <Routes>
-      {/* Landing page - no sidebar */}
-      <Route path="/landing" element={<LandingEntry />} />
+    <Suspense fallback={<RouteFallback />}>
+      <Routes>
+        {/* Landing page - no sidebar */}
+        <Route path="/landing" element={<LandingEntry />} />
 
-      {/* Auth & onboarding - no sidebar */}
-      <Route path="/auth" element={<AppSurface><RedirectAuthed><AuthPage /></RedirectAuthed></AppSurface>} />
-      <Route path="/onboarding" element={<AppSurface><RequireAuth><OnboardingPage /></RequireAuth></AppSurface>} />
+        {/* Auth & onboarding - no sidebar */}
+        <Route path="/auth" element={<AppSurface><RedirectAuthed><AuthPage /></RedirectAuthed></AppSurface>} />
+        <Route path="/onboarding" element={<AppSurface><RequireAuth><OnboardingPage /></RequireAuth></AppSurface>} />
 
-      {/* Static pages - no sidebar */}
-      <Route path="/help" element={<HelpCenterPage />} />
-      <Route path="/contact" element={<ContactPage />} />
-      <Route path="/privacy" element={<PrivacyPage />} />
-      <Route path="/terms" element={<TermsPage />} />
-      <Route path="/cookies" element={<CookiesPage />} />
+        {/* Static pages - no sidebar */}
+        <Route path="/help" element={<HelpCenterPage />} />
+        <Route path="/contact" element={<ContactPage />} />
+        <Route path="/privacy" element={<PrivacyPage />} />
+        <Route path="/terms" element={<TermsPage />} />
+        <Route path="/cookies" element={<CookiesPage />} />
 
-      {/* App pages - with sidebar + topbar */}
-      <Route path="/" element={<DashboardEntry />} />
-      <Route path="/dashboard" element={<AppPage><DashboardPage /></AppPage>} />
-      <Route path="/transactions" element={<AppPage><TransactionsPage /></AppPage>} />
-      <Route path="/accounts" element={<AppPage><AccountsPage /></AppPage>} />
-      <Route path="/categories" element={<AppPage><CategoriesPage /></AppPage>} />
-      <Route path="/debts" element={<AppPage><DebtsPage /></AppPage>} />
-      <Route path="/subscriptions" element={<AppPage><SubscriptionsPage /></AppPage>} />
-      <Route path="/analytics" element={<AppPage><AnalyticsPage /></AppPage>} />
-      <Route path="/capital" element={<AppPage><CapitalPage /></AppPage>} />
-      <Route path="/calendar" element={<AppPage><CalendarPage /></AppPage>} />
-      <Route path="/budgets" element={<AppPage><BudgetsPage /></AppPage>} />
-      <Route path="/goals" element={<AppPage><GoalsPage /></AppPage>} />
-      <Route path="/ai-assistant" element={<AppPage><AIAssistantPage /></AppPage>} />
-      <Route path="/payments" element={<AppPage><PaymentsPage /></AppPage>} />
-      <Route path="/history" element={<AppPage><HistoryPage /></AppPage>} />
-      <Route path="/settings" element={<AppPage><SettingsPage /></AppPage>} />
+        {/* App pages - with sidebar + topbar */}
+        <Route path="/" element={<DashboardEntry />} />
+        <Route path="/dashboard" element={<AppPage><DashboardPage /></AppPage>} />
+        <Route path="/transactions" element={<AppPage><TransactionsPage /></AppPage>} />
+        <Route path="/accounts" element={<AppPage><AccountsPage /></AppPage>} />
+        <Route path="/categories" element={<AppPage><CategoriesPage /></AppPage>} />
+        <Route path="/debts" element={<AppPage><DebtsPage /></AppPage>} />
+        <Route path="/subscriptions" element={<AppPage><SubscriptionsPage /></AppPage>} />
+        <Route path="/analytics" element={<AppPage><AnalyticsPage /></AppPage>} />
+        <Route path="/capital" element={<AppPage><CapitalPage /></AppPage>} />
+        <Route path="/calendar" element={<AppPage><CalendarPage /></AppPage>} />
+        <Route path="/budgets" element={<AppPage><BudgetsPage /></AppPage>} />
+        <Route path="/goals" element={<AppPage><GoalsPage /></AppPage>} />
+        <Route path="/ai-assistant" element={<AppPage><AIAssistantPage /></AppPage>} />
+        <Route path="/payments" element={<AppPage><PaymentsPage /></AppPage>} />
+        <Route path="/history" element={<AppPage><HistoryPage /></AppPage>} />
+        <Route path="/settings" element={<AppPage><SettingsPage /></AppPage>} />
 
-      {/* Redirect */}
-      <Route path="*" element={<Navigate to="/" replace />} />
-    </Routes>
+        {/* Redirect */}
+        <Route path="*" element={<Navigate to="/" replace />} />
+      </Routes>
+    </Suspense>
   );
 }

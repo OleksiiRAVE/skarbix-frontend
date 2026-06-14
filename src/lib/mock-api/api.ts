@@ -708,6 +708,22 @@ export const fetchMonobankStatus = async (): Promise<MonobankConnection> => {
   return backendRequest<MonobankConnection>('/v1/monobank/status');
 };
 
+export const authorizeMonobank = async () => {
+  return backendRequest<MonobankConnection>('/v1/monobank/provider/authorize', {
+    method: 'POST',
+  });
+};
+
+export const confirmMonobankAuthorization = async () => {
+  return backendRequest<MonobankConnection & {
+    imported?: number;
+    accountsImported?: number;
+    syncLimited?: boolean;
+  }>('/v1/monobank/provider/confirm', {
+    method: 'POST',
+  });
+};
+
 export const connectMonobank = async (token: string) => {
   return backendRequest<MonobankConnection & { accountsImported: number }>('/v1/monobank/connect', {
     method: 'POST',
