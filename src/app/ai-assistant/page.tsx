@@ -8,21 +8,56 @@ import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { formatCurrency } from '@/lib/utils/format';
 import { createTransaction, fetchCategories, sendAIMessage } from '@/lib/mock-api/api';
+import { useAppStore } from '@/store';
 import { toast } from 'sonner';
 import type { AIMessage } from '@/types';
 
-const suggestedPrompts = [
-  'I spent 250 UAH on coffee',
-  'Add debt from Sasha',
-  'Analyze this month',
-  'Create a food budget',
-];
+const copy = {
+  uk: {
+    welcome: 'Привіт! Я допоможу розібрати витрати, бюджети та борги. Зміни підтверджуєш лише ти.',
+    prompts: ['Я витратив 250 грн на каву', 'Додай борг від Сашка', 'Проаналізуй цей місяць', 'Створи бюджет на їжу'],
+    error: 'Не вдалося отримати відповідь. Спробуй ще раз.',
+    transactionAdded: 'Транзакцію додано',
+    transactionError: 'Не вдалося додати транзакцію',
+    title: 'AI-асистент',
+    online: 'Онлайн',
+    detectedTransaction: 'Знайдена транзакція',
+    amount: 'Сума',
+    category: 'Категорія',
+    date: 'Дата',
+    confidence: 'Впевненість',
+    added: 'Додано',
+    confirm: 'Підтвердити',
+    edit: 'Редагувати',
+    placeholder: 'Запитай Skarbix AI про фінанси...',
+  },
+  en: {
+    welcome: 'Hello! I can help with expenses, budgets, and debts. Only you can confirm changes.',
+    prompts: ['I spent 250 UAH on coffee', 'Add debt from Sasha', 'Analyze this month', 'Create a food budget'],
+    error: 'Could not get a response. Please try again.',
+    transactionAdded: 'Transaction added',
+    transactionError: 'Could not add transaction',
+    title: 'AI Assistant',
+    online: 'Online',
+    detectedTransaction: 'Detected Transaction',
+    amount: 'Amount',
+    category: 'Category',
+    date: 'Date',
+    confidence: 'Confidence',
+    added: 'Added',
+    confirm: 'Confirm',
+    edit: 'Edit',
+    placeholder: 'Ask Skarbix AI about your finances...',
+  },
+} as const;
 
 export default function AIAssistantPage() {
+  const language = useAppStore((state) => state.language);
+  const text = copy[language];
   const [messages, setMessages] = useState<AIMessage[]>([{
     id: 'welcome',
     role: 'assistant',
-    content: 'Привет! Я помогу разобрать расходы, бюджеты и долги. Изменения подтверждаешь только ты.',
+    content: copy.uk.welcome,
     timestamp: new Date().toISOString(),
   }]);
   const [input, setInput] = useState('');
@@ -37,6 +72,12 @@ export default function AIAssistantPage() {
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
+
+  useEffect(() => {
+    setMessages((current) => current.map((message) => (
+      message.id === 'welcome' ? { ...message, content: text.welcome } : message
+    )));
+  }, [text.welcome]);
 
   const handleSend = async () => {
     if (!input.trim() || loading) return;
@@ -55,13 +96,14 @@ export default function AIAssistantPage() {
       const response = await sendAIMessage(
         userMsg.content,
         messages.filter((message) => message.id !== 'welcome').map(({ role, content }) => ({ role, content })),
+        language,
       );
       setMessages((prev) => [...prev, response]);
     } catch (error) {
       const fallback: AIMessage = {
         id: `ai${Date.now()}`,
         role: 'assistant',
-        content: error instanceof Error ? error.message : 'Не удалось получить ответ. Попробуй еще раз.',
+        content: error instanceof Error ? error.message : text.error,
         timestamp: new Date().toISOString(),
       };
       setMessages((prev) => [...prev, fallback]);
@@ -91,9 +133,9 @@ export default function AIAssistantPage() {
         source: 'ai',
       });
       setConfirmedIds((current) => new Set(current).add(message.id));
-      toast.success('Транзакция добавлена');
+      toast.success(text.transactionAdded);
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : 'Не удалось добавить транзакцию');
+      toast.error(error instanceof Error ? error.message : text.transactionError);
     } finally {
       setConfirmingId(null);
     }
@@ -130,10 +172,10 @@ export default function AIAssistantPage() {
           <Sparkles className="w-4 h-4 sm:w-5 sm:h-5 text-[#8B5CF6]" />
         </div>
         <div>
-          <h1 className="text-xl sm:text-2xl font-bold text-[var(--sk-text)]">AI Assistant</h1>
+          <h1 className="text-xl sm:text-2xl font-bold text-[var(--sk-text)]">{text.title}</h1>
           <div className="flex items-center gap-1.5">
             <span className="w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full bg-green-500/100 animate-pulse" />
-            <span className="text-[11px] sm:text-xs text-[var(--sk-text-secondary)]">Online</span>
+            <span className="text-[11px] sm:text-xs text-[var(--sk-text-secondary)]">{text.online}</span>
           </div>
         </div>
       </motion.div>
@@ -173,23 +215,23 @@ export default function AIAssistantPage() {
                 >
                   <div className="flex items-center gap-2 mb-2 sm:mb-3">
                     <Wand2 className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-[#8B5CF6]" />
-                    <span className="text-[10px] sm:text-xs font-semibold text-[#8B5CF6] uppercase tracking-wide">Detected Transaction</span>
+                    <span className="text-[10px] sm:text-xs font-semibold text-[#8B5CF6] uppercase tracking-wide">{text.detectedTransaction}</span>
                   </div>
                   <div className="grid grid-cols-2 gap-2 sm:gap-3 mb-2 sm:mb-3">
                     <div>
-                      <p className="text-[10px] sm:text-[11px] text-[var(--sk-text-secondary)]">Amount</p>
+                      <p className="text-[10px] sm:text-[11px] text-[var(--sk-text-secondary)]">{text.amount}</p>
                       <p className="text-xs sm:text-sm font-semibold text-[var(--sk-text)]">{formatCurrency(msg.parsedTransaction.amount)}</p>
                     </div>
                     <div>
-                      <p className="text-[10px] sm:text-[11px] text-[var(--sk-text-secondary)]">Category</p>
+                      <p className="text-[10px] sm:text-[11px] text-[var(--sk-text-secondary)]">{text.category}</p>
                       <p className="text-xs sm:text-sm font-semibold text-[var(--sk-text)]">{msg.parsedTransaction.category}</p>
                     </div>
                     <div>
-                      <p className="text-[10px] sm:text-[11px] text-[var(--sk-text-secondary)]">Date</p>
+                      <p className="text-[10px] sm:text-[11px] text-[var(--sk-text-secondary)]">{text.date}</p>
                       <p className="text-xs sm:text-sm font-semibold text-[var(--sk-text)]">{msg.parsedTransaction.date}</p>
                     </div>
                     <div>
-                      <p className="text-[10px] sm:text-[11px] text-[var(--sk-text-secondary)]">Confidence</p>
+                      <p className="text-[10px] sm:text-[11px] text-[var(--sk-text-secondary)]">{text.confidence}</p>
                       <div className="flex items-center gap-2">
                         <div className="flex-1 h-1.5 bg-[var(--sk-border-light)] rounded-full overflow-hidden">
                           <div
@@ -211,10 +253,10 @@ export default function AIAssistantPage() {
                       {confirmingId === msg.id
                         ? <Loader2 className="w-3 h-3 mr-0.5 sm:mr-1 animate-spin" />
                         : <Check className="w-3 h-3 mr-0.5 sm:mr-1" />}
-                      {confirmedIds.has(msg.id) ? 'Added' : 'Confirm'}
+                      {confirmedIds.has(msg.id) ? text.added : text.confirm}
                     </Button>
                     <Button size="sm" variant="outline" className="h-7 sm:h-8 rounded-full text-[10px] sm:text-xs px-2 sm:px-3 border-[var(--sk-border)]">
-                      <Pencil className="w-3 h-3 mr-0.5 sm:mr-1" /> Edit
+                      <Pencil className="w-3 h-3 mr-0.5 sm:mr-1" /> {text.edit}
                     </Button>
                     <Button size="sm" variant="ghost" className="h-7 sm:h-8 rounded-full text-[10px] sm:text-xs px-2 text-[var(--sk-text-secondary)]">
                       <X className="w-3 h-3" />
@@ -271,7 +313,7 @@ export default function AIAssistantPage() {
 
       {/* Suggested Prompts */}
       <div className="flex gap-1.5 sm:gap-2 mt-3 sm:mt-4 mb-2 sm:mb-3 overflow-x-auto pb-1 -mx-1 px-1 scrollbar-hide">
-        {suggestedPrompts.map((prompt) => (
+        {text.prompts.map((prompt) => (
           <button
             key={prompt}
             onClick={() => handlePromptClick(prompt)}
@@ -305,7 +347,7 @@ export default function AIAssistantPage() {
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={handleKeyDown}
-            placeholder="Ask Skarbix AI anything..."
+            placeholder={text.placeholder}
             className="flex-1 min-h-[40px] sm:min-h-[44px] max-h-[100px] sm:max-h-[120px] border-0 bg-transparent resize-none focus-visible:ring-0 text-sm px-2 py-2"
           />
           <Button

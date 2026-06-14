@@ -674,11 +674,13 @@ export const fetchAIMessages = async (): Promise<AIMessage[]> => {
 export const sendAIMessage = async (
   content: string,
   history: Pick<AIMessage, 'role' | 'content'>[] = [],
+  locale: 'uk' | 'en' = 'uk',
 ): Promise<AIMessage> => backendRequest<AIMessage>('/v1/ai/chat', {
   method: 'POST',
   body: JSON.stringify({
     message: content,
     history: history.slice(-12),
+    locale,
   }),
 });
 
