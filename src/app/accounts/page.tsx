@@ -35,14 +35,27 @@ export default function AccountsPage() {
 
   useEffect(() => {
     let cancelled = false;
-    fetchAccounts().then((data) => {
-      if (cancelled) return;
-      setAccounts(data);
-      setLoading(false);
-    });
+    const refresh = async (initial = false) => {
+      try {
+        const data = await fetchAccounts();
+        if (cancelled) return;
+        setAccounts(data);
+      } finally {
+        if (initial && !cancelled) setLoading(false);
+      }
+    };
+    const refreshWhenVisible = () => {
+      if (document.visibilityState === 'visible') void refresh();
+    };
+
+    void refresh(true);
+    const interval = window.setInterval(refreshWhenVisible, 15000);
+    document.addEventListener('visibilitychange', refreshWhenVisible);
 
     return () => {
       cancelled = true;
+      window.clearInterval(interval);
+      document.removeEventListener('visibilitychange', refreshWhenVisible);
     };
   }, []);
 

@@ -64,6 +64,27 @@ export default function TransactionsPage() {
     return () => { mounted = false; };
   }, []);
 
+  useEffect(() => {
+    let cancelled = false;
+    const refresh = async () => {
+      if (document.visibilityState !== 'visible') return;
+      try {
+        const res = await fetchTransactions({ search, limit: 10 });
+        if (!cancelled) setTransactions(res.transactions);
+      } catch {
+        // Keep the last successful result during background refresh failures.
+      }
+    };
+    const interval = window.setInterval(() => void refresh(), 15000);
+    document.addEventListener('visibilitychange', refresh);
+
+    return () => {
+      cancelled = true;
+      window.clearInterval(interval);
+      document.removeEventListener('visibilitychange', refresh);
+    };
+  }, [search]);
+
   const handleSearch = async (val: string) => {
     setSearch(val);
     try {

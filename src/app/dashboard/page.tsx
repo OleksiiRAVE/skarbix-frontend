@@ -38,8 +38,9 @@ export default function DashboardPage() {
   const [modalOpen, setModalOpen] = useState(false);
 
   useEffect(() => {
-    const load = async () => {
-      setLoading(true);
+    let cancelled = false;
+    const load = async (initial = false) => {
+      if (initial) setLoading(true);
       try {
         const [accRes, txRes, cfRes, toRes] = await Promise.all([
           fetchAccounts(),
@@ -47,6 +48,7 @@ export default function DashboardPage() {
           fetchCashFlow(),
           fetchTransactionOverview(),
         ]);
+        if (cancelled) return;
         setAccounts(accRes);
         setTransactions(txRes.transactions);
         setCashFlow(cfRes);
@@ -54,10 +56,22 @@ export default function DashboardPage() {
       } catch (err) {
         console.error('Failed to load dashboard data:', err);
       } finally {
-        setTimeout(() => setLoading(false), 400);
+        if (initial && !cancelled) setLoading(false);
       }
     };
-    load();
+    const refreshWhenVisible = () => {
+      if (document.visibilityState === 'visible') void load();
+    };
+
+    void load(true);
+    const interval = window.setInterval(refreshWhenVisible, 15000);
+    document.addEventListener('visibilitychange', refreshWhenVisible);
+
+    return () => {
+      cancelled = true;
+      window.clearInterval(interval);
+      document.removeEventListener('visibilitychange', refreshWhenVisible);
+    };
   }, []);
 
   if (loading) {
