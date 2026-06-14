@@ -2,12 +2,12 @@ import { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Send, Mic, Image, Sparkles, Check, X, Pencil, Loader2,
-  User, Wand2,
+  User, Wand2, HandCoins,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { formatCurrency } from '@/lib/utils/format';
-import { createTransaction, fetchCategories, sendAIMessage } from '@/lib/mock-api/api';
+import { createDebt, createTransaction, fetchCategories, sendAIMessage } from '@/lib/mock-api/api';
 import { useAppStore } from '@/store';
 import { toast } from 'sonner';
 import type { AIMessage } from '@/types';
@@ -19,6 +19,8 @@ const copy = {
     error: 'Не вдалося отримати відповідь. Спробуй ще раз.',
     transactionAdded: 'Транзакцію додано',
     transactionError: 'Не вдалося додати транзакцію',
+    debtAdded: 'Борг додано',
+    debtError: 'Не вдалося додати борг',
     title: 'AI-асистент',
     online: 'Онлайн',
     detectedTransaction: 'Знайдена транзакція',
@@ -29,6 +31,11 @@ const copy = {
     added: 'Додано',
     confirm: 'Підтвердити',
     edit: 'Редагувати',
+    detectedDebt: 'Знайдений борг',
+    person: 'Людина',
+    direction: 'Напрямок',
+    owedToMe: 'Мені винні',
+    iOwe: 'Я винен',
     placeholder: 'Запитай Skarbix AI про фінанси...',
   },
   en: {
@@ -37,6 +44,8 @@ const copy = {
     error: 'Could not get a response. Please try again.',
     transactionAdded: 'Transaction added',
     transactionError: 'Could not add transaction',
+    debtAdded: 'Debt added',
+    debtError: 'Could not add debt',
     title: 'AI Assistant',
     online: 'Online',
     detectedTransaction: 'Detected Transaction',
@@ -47,6 +56,11 @@ const copy = {
     added: 'Added',
     confirm: 'Confirm',
     edit: 'Edit',
+    detectedDebt: 'Detected Debt',
+    person: 'Person',
+    direction: 'Direction',
+    owedToMe: 'Owed to me',
+    iOwe: 'I owe',
     placeholder: 'Ask Skarbix AI about your finances...',
   },
 } as const;
@@ -66,6 +80,8 @@ export default function AIAssistantPage() {
   const [typing, setTyping] = useState(false);
   const [confirmingId, setConfirmingId] = useState<string | null>(null);
   const [confirmedIds, setConfirmedIds] = useState<Set<string>>(() => new Set());
+  const [confirmingDebtId, setConfirmingDebtId] = useState<string | null>(null);
+  const [confirmedDebtIds, setConfirmedDebtIds] = useState<Set<string>>(() => new Set());
   const bottomRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
@@ -138,6 +154,27 @@ export default function AIAssistantPage() {
       toast.error(error instanceof Error ? error.message : text.transactionError);
     } finally {
       setConfirmingId(null);
+    }
+  };
+
+  const handleConfirmDebt = async (message: AIMessage) => {
+    if (!message.parsedDebt || confirmingDebtId) return;
+    setConfirmingDebtId(message.id);
+    try {
+      await createDebt({
+        personName: message.parsedDebt.personName,
+        amount: message.parsedDebt.amount,
+        currency: message.parsedDebt.currency || 'UAH',
+        direction: message.parsedDebt.direction,
+        dueDate: message.parsedDebt.dueDate || undefined,
+        notes: 'Added via AI assistant',
+      });
+      setConfirmedDebtIds((current) => new Set(current).add(message.id));
+      toast.success(text.debtAdded);
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : text.debtError);
+    } finally {
+      setConfirmingDebtId(null);
     }
   };
 
@@ -262,6 +299,54 @@ export default function AIAssistantPage() {
                       <X className="w-3 h-3" />
                     </Button>
                   </div>
+                </motion.div>
+              )}
+
+              {msg.parsedDebt && (
+                <motion.div
+                  initial={{ opacity: 0, scale: 0.95 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  className="mt-2 bg-[var(--sk-card)] rounded-[12px] sm:rounded-[16px] border border-[var(--sk-border)] p-3 sm:p-4 shadow-sm"
+                >
+                  <div className="flex items-center gap-2 mb-2 sm:mb-3">
+                    <HandCoins className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-[#8B5CF6]" />
+                    <span className="text-[10px] sm:text-xs font-semibold text-[#8B5CF6] uppercase tracking-wide">{text.detectedDebt}</span>
+                  </div>
+                  <div className="grid grid-cols-2 gap-2 sm:gap-3 mb-2 sm:mb-3">
+                    <div>
+                      <p className="text-[10px] sm:text-[11px] text-[var(--sk-text-secondary)]">{text.person}</p>
+                      <p className="text-xs sm:text-sm font-semibold text-[var(--sk-text)]">{msg.parsedDebt.personName}</p>
+                    </div>
+                    <div>
+                      <p className="text-[10px] sm:text-[11px] text-[var(--sk-text-secondary)]">{text.amount}</p>
+                      <p className="text-xs sm:text-sm font-semibold text-[var(--sk-text)]">
+                        {formatCurrency(msg.parsedDebt.amount, msg.parsedDebt.currency || 'UAH')}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-[10px] sm:text-[11px] text-[var(--sk-text-secondary)]">{text.direction}</p>
+                      <p className="text-xs sm:text-sm font-semibold text-[var(--sk-text)]">
+                        {msg.parsedDebt.direction === 'owed_to_me' ? text.owedToMe : text.iOwe}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-[10px] sm:text-[11px] text-[var(--sk-text-secondary)]">{text.confidence}</p>
+                      <p className="text-xs sm:text-sm font-semibold text-[var(--sk-text)]">
+                        {Math.round(msg.parsedDebt.confidence * 100)}%
+                      </p>
+                    </div>
+                  </div>
+                  <Button
+                    size="sm"
+                    disabled={confirmingDebtId === msg.id || confirmedDebtIds.has(msg.id)}
+                    onClick={() => handleConfirmDebt(msg)}
+                    className="h-7 sm:h-8 bg-green-500/100 hover:bg-green-600 text-white rounded-full text-[10px] sm:text-xs px-2 sm:px-3"
+                  >
+                    {confirmingDebtId === msg.id
+                      ? <Loader2 className="w-3 h-3 mr-0.5 sm:mr-1 animate-spin" />
+                      : <Check className="w-3 h-3 mr-0.5 sm:mr-1" />}
+                    {confirmedDebtIds.has(msg.id) ? text.added : text.confirm}
+                  </Button>
                 </motion.div>
               )}
             </div>

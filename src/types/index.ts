@@ -129,7 +129,9 @@ export interface ParsedTransaction {
 export interface ParsedDebt {
   personName: string;
   amount: number;
+  currency?: string;
   direction: 'owed_to_me' | 'i_owe';
+  dueDate?: string | null;
   confidence: number;
 }
 
