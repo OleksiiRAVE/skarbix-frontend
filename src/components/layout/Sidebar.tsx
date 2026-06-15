@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next';
 import {
   LayoutDashboard, Receipt, Wallet, Tags, AlertCircle,
   Repeat, BarChart3, TrendingUp, CalendarDays, PiggyBank,
-  Target, Sparkles, Hexagon, ChevronLeft, ChevronRight,
+  Target, Sparkles, Hexagon, ChevronLeft, ChevronRight, History,
 } from 'lucide-react';
 
 interface NavItem {
@@ -38,6 +38,7 @@ const navGroups: NavGroup[] = [
       { label: 'sidebar.analytics', path: '/analytics', icon: BarChart3 },
       { label: 'sidebar.capital', path: '/capital', icon: TrendingUp },
       { label: 'sidebar.calendar', path: '/calendar', icon: CalendarDays },
+      { label: 'history.title', path: '/history', icon: History },
     ],
   },
   {

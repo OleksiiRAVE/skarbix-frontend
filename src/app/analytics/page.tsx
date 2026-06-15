@@ -11,8 +11,6 @@ import { fetchAnalytics } from '@/lib/mock-api/api';
 import type { AnalyticsData } from '@/types';
 import type { TooltipProps } from 'recharts';
 
-const monthLabels = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'];
-
 function CustomTooltip({ active, payload, label }: TooltipProps<number, string>) {
   if (!active || !payload?.length) return null;
   return (
@@ -58,16 +56,20 @@ export default function AnalyticsPage() {
     );
   }
 
-  const incomeVsExpense = monthLabels.map((m, i) => ({
+  const incomeVsExpense = data.monthLabels.map((m, i) => ({
     month: m,
     income: data.monthlyIncome[i],
     expense: data.monthlyExpense[i],
   }));
 
-  const trendData = monthLabels.map((m, i) => ({
+  const trendData = data.monthLabels.map((m, i) => ({
     month: m,
     savings: data.monthlySavings[i],
   }));
+  const expenseChange = data.previousExpense > 0
+    ? ((data.currentExpense - data.previousExpense) / data.previousExpense) * 100
+    : 0;
+  const topCategory = data.categoryBreakdown[0];
 
   return (
     <div className="space-y-6 sm:space-y-8">
@@ -120,6 +122,9 @@ export default function AnalyticsPage() {
               </ResponsiveContainer>
             </div>
             <div className="space-y-2 sm:space-y-2.5 flex-1 w-full">
+              {data.categoryBreakdown.length === 0 && (
+                <p className="text-xs text-[var(--sk-text-secondary)] text-center sm:text-left">No expenses this month yet.</p>
+              )}
               {data.categoryBreakdown.slice(0, 5).map((cat) => (
                 <div key={cat.name} className="flex items-center gap-2">
                   <div className="w-2 h-2 sm:w-2.5 sm:h-2.5 rounded-full flex-shrink-0" style={{ backgroundColor: cat.color }} />
@@ -192,6 +197,9 @@ export default function AnalyticsPage() {
         >
           <h3 className="text-sm sm:text-base font-semibold text-[var(--sk-text)] mb-3 sm:mb-4">Top Merchants</h3>
           <div className="space-y-0">
+            {data.topMerchants.length === 0 && (
+              <p className="text-sm text-[var(--sk-text-secondary)] py-8 text-center">No merchant data this month yet.</p>
+            )}
             {data.topMerchants.map((m, i) => (
               <div key={m.name} className="flex items-center gap-3 sm:gap-4 py-2.5 sm:py-3 border-b border-[var(--sk-border-light)] last:border-0">
                 <span className="text-xs sm:text-sm font-bold text-[var(--sk-text-secondary)] w-4 sm:w-5">{i + 1}</span>
@@ -220,9 +228,28 @@ export default function AnalyticsPage() {
             <h3 className="text-sm sm:text-base font-semibold text-[var(--sk-text)] mb-3 sm:mb-4">AI Insights</h3>
             <div className="space-y-2.5 sm:space-y-3">
               {[
-                { icon: TrendingUp, text: 'Your grocery spending increased 15% this month', color: 'text-amber-500', bg: 'bg-amber-500/10' },
-                { icon: TrendingDown, text: 'You saved 23% more than last month', color: 'text-green-500', bg: 'bg-green-500/10' },
-                { icon: ArrowUpRight, text: 'Entertainment costs are within budget', color: 'text-blue-500', bg: 'bg-blue-500/10' },
+                {
+                  icon: expenseChange > 0 ? TrendingUp : TrendingDown,
+                  text: data.previousExpense > 0
+                    ? `Expenses are ${Math.abs(expenseChange).toFixed(0)}% ${expenseChange > 0 ? 'higher' : 'lower'} than last month`
+                    : 'Not enough previous-month data for comparison',
+                  color: expenseChange > 0 ? 'text-amber-500' : 'text-green-500',
+                  bg: expenseChange > 0 ? 'bg-amber-500/10' : 'bg-green-500/10',
+                },
+                {
+                  icon: ArrowUpRight,
+                  text: topCategory
+                    ? `${topCategory.name} is your largest expense category at ${formatCurrency(topCategory.amount)}`
+                    : 'Add expenses to see category insights',
+                  color: 'text-blue-500',
+                  bg: 'bg-blue-500/10',
+                },
+                {
+                  icon: data.currentIncome >= data.currentExpense ? TrendingDown : TrendingUp,
+                  text: `Current month balance: ${formatCurrency(data.currentIncome - data.currentExpense)}`,
+                  color: data.currentIncome >= data.currentExpense ? 'text-green-500' : 'text-red-500',
+                  bg: data.currentIncome >= data.currentExpense ? 'bg-green-500/10' : 'bg-red-500/10',
+                },
               ].map((insight, i) => (
                 <div key={i} className="flex items-start gap-2.5 sm:gap-3">
                   <div className={`w-7 h-7 sm:w-8 sm:h-8 rounded-lg ${insight.bg} flex items-center justify-center flex-shrink-0`}>
@@ -241,15 +268,18 @@ export default function AnalyticsPage() {
               <h3 className="text-sm sm:text-base font-semibold text-[var(--sk-text)]">Financial Forecast</h3>
             </div>
             <p className="text-sm sm:text-[15px] text-[var(--sk-text-secondary)] leading-relaxed mb-3 sm:mb-4">
-              At your current pace, you will have <span className="font-bold text-[var(--sk-text)]">₴18,200</span> left by the end of the month.
+              At your current pace, projected month-end savings are{' '}
+              <span className={`font-bold ${data.projectedSavings >= 0 ? 'text-green-500' : 'text-red-500'}`}>
+                {formatCurrency(data.projectedSavings)}
+              </span>.
             </p>
             <div className="space-y-1.5">
               <div className="flex items-center justify-between text-xs">
                 <span className="text-[var(--sk-text-secondary)]">Confidence</span>
-                <span className="font-semibold text-[var(--sk-text)]">78%</span>
+                <span className="font-semibold text-[var(--sk-text)]">{data.dailySpending.length >= 7 ? 'High' : 'Early estimate'}</span>
               </div>
               <div className="h-2 bg-[var(--sk-border)] rounded-full overflow-hidden">
-                <div className="h-full bg-[#8B5CF6] rounded-full" style={{ width: '78%' }} />
+                <div className="h-full bg-[#8B5CF6] rounded-full" style={{ width: data.dailySpending.length >= 7 ? '80%' : '40%' }} />
               </div>
             </div>
           </div>

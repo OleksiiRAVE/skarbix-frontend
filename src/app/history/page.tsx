@@ -15,6 +15,7 @@ const eventConfig: Record<string, { icon: typeof RefreshCw; color: string; bg: s
   budget_exceeded: { icon: AlertTriangle, color: 'text-red-600', bg: 'bg-red-500/10' },
   debt_paid: { icon: CheckCircle, color: 'text-green-600', bg: 'bg-green-500/10' },
   setting_change: { icon: Settings, color: 'text-gray-600', bg: 'bg-[var(--sk-border-light)]' },
+  transaction: { icon: RefreshCw, color: 'text-cyan-600', bg: 'bg-cyan-500/10' },
 };
 
 const filterOptions = [
@@ -76,6 +77,13 @@ export default function HistoryPage() {
       </motion.div>
 
       <div className="space-y-3">
+        {filtered.length === 0 && (
+          <div className="rounded-[16px] border border-dashed border-[var(--sk-border)] bg-[var(--sk-card)] py-14 px-5 text-center">
+            <CheckCircle className="w-7 h-7 text-[var(--sk-text-secondary)] mx-auto mb-3" />
+            <p className="text-sm font-semibold text-[var(--sk-text)]">No events yet</p>
+            <p className="text-xs text-[var(--sk-text-secondary)] mt-1">Important account activity will appear here.</p>
+          </div>
+        )}
         {filtered.map((event, i) => {
           const config = eventConfig[event.type] || eventConfig.setting_change;
           const Icon = config.icon;
@@ -86,13 +94,13 @@ export default function HistoryPage() {
               initial={{ opacity: 0, x: -10 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ delay: i * 0.06 }}
-              className="bg-[var(--sk-card)] rounded-[20px] p-5 border border-[var(--sk-border)] shadow-sm flex items-start gap-4 hover:shadow-md transition-shadow"
+              className="bg-[var(--sk-card)] rounded-[16px] sm:rounded-[20px] p-4 sm:p-5 border border-[var(--sk-border)] shadow-sm flex items-start gap-3 sm:gap-4 hover:shadow-md transition-shadow"
             >
               <div className={`w-10 h-10 rounded-xl ${config.bg} flex items-center justify-center flex-shrink-0`}>
                 <Icon className={`w-4.5 h-4.5 ${config.color}`} />
               </div>
               <div className="flex-1 min-w-0">
-                <div className="flex items-center justify-between gap-2">
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1 sm:gap-2">
                   <p className="text-sm font-semibold text-[var(--sk-text)]">{event.title}</p>
                   <span className="text-xs text-[var(--sk-text-secondary)] flex-shrink-0">{formatDate(event.timestamp)}</span>
                 </div>

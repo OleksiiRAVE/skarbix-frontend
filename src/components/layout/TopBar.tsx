@@ -1,15 +1,20 @@
-import { useState, useMemo } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useLocation, useNavigate } from 'react-router';
 import { motion } from 'framer-motion';
 import {
   Bell, Moon, Sun, ChevronDown, LogOut, User, Settings,
-  Palette, Clock, TrendingUp, TrendingDown,
+  Palette, Clock, TrendingUp, TrendingDown, Menu, Wallet, Tags,
+  AlertCircle, Repeat, BarChart3, PiggyBank, Sparkles, History,
 } from 'lucide-react';
 import { useAppStore } from '@/store';
-import { mockNotifications } from '@/lib/mock-api/data';
 import type { Notification } from '@/types';
 import { formatRelativeTime } from '@/lib/utils/format';
+import {
+  fetchNotifications,
+  markAllNotificationsRead,
+  markNotificationRead,
+} from '@/lib/mock-api/api';
 import {
   Popover,
   PopoverContent,
@@ -67,12 +72,29 @@ export function TopBar() {
   const setLanguage = useAppStore((s) => s.setLanguage);
   const user = useAppStore((s) => s.user);
   const [langOpen, setLangOpen] = useState(false);
-  const [profileOpen, setProfileOpen] = useState(false);
+  const [notificationOpen, setNotificationOpen] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [notifications, setNotifications] = useState<Notification[]>([]);
 
-  const unreadCount = mockNotifications.filter((n) => !n.read).length;
+  const unreadCount = notifications.filter((n) => !n.read).length;
   const displayName = user?.name || 'Account';
   const displayEmail = user?.email || 'Signed in';
   const initial = displayName.charAt(0).toUpperCase();
+
+  useEffect(() => {
+    let active = true;
+    const load = () => {
+      void fetchNotifications()
+        .then((items) => { if (active) setNotifications(items); })
+        .catch(() => { if (active) setNotifications([]); });
+    };
+    load();
+    const interval = window.setInterval(load, 30_000);
+    return () => {
+      active = false;
+      window.clearInterval(interval);
+    };
+  }, []);
 
   const handleLogout = async () => {
     await signOut();
@@ -107,9 +129,31 @@ export function TopBar() {
   };
 
   const goToSettingsSection = (section: 'profile' | 'security' | 'appearance') => {
-    setProfileOpen(false);
     navigate(`/settings?section=${section}`);
   };
+
+  const handleNotificationClick = async (notification: Notification) => {
+    await markNotificationRead(notification.id);
+    setNotifications((current) => current.map((item) => (
+      item.id === notification.id ? { ...item, read: true } : item
+    )));
+  };
+
+  const handleMarkAllRead = async () => {
+    await markAllNotificationsRead();
+    setNotifications((current) => current.map((item) => ({ ...item, read: true })));
+  };
+
+  const mobileLinks = [
+    { label: 'sidebar.accounts', path: '/accounts', icon: Wallet },
+    { label: 'sidebar.categories', path: '/categories', icon: Tags },
+    { label: 'sidebar.debts', path: '/debts', icon: AlertCircle },
+    { label: 'sidebar.subscriptions', path: '/subscriptions', icon: Repeat },
+    { label: 'sidebar.analytics', path: '/analytics', icon: BarChart3 },
+    { label: 'sidebar.budget', path: '/budgets', icon: PiggyBank },
+    { label: 'sidebar.aiAssistant', path: '/ai-assistant', icon: Sparkles },
+    { label: 'history.title', path: '/history', icon: History },
+  ];
 
   return (
     <motion.header
@@ -123,14 +167,42 @@ export function TopBar() {
       }}
     >
       {/* Left: Page title area */}
-      <div className="flex items-center gap-2">
-        <h1 className="text-sm sm:text-base font-semibold text-[var(--sk-text)] hidden sm:block">
+      <div className="flex items-center gap-2 min-w-0">
+        <Popover open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
+          <PopoverTrigger asChild>
+            <button className="lg:hidden p-2 -ml-1 rounded-xl text-[var(--sk-text-secondary)] hover:bg-[var(--sk-border-light)]" aria-label="Open navigation">
+              <Menu className="w-5 h-5" />
+            </button>
+          </PopoverTrigger>
+          <PopoverContent
+            className="w-[calc(100vw-24px)] max-w-sm p-2 rounded-[16px] border shadow-lg"
+            style={{ backgroundColor: 'var(--sk-card)', borderColor: 'var(--sk-border)' }}
+            align="start"
+          >
+            <div className="grid grid-cols-2 gap-1">
+              {mobileLinks.map((item) => (
+                <button
+                  key={item.path}
+                  onClick={() => {
+                    navigate(item.path);
+                    setMobileMenuOpen(false);
+                  }}
+                  className="flex items-center gap-2.5 px-3 py-3 rounded-xl text-sm text-left text-[var(--sk-text)] hover:bg-[var(--sk-border-light)]"
+                >
+                  <item.icon className="w-4 h-4 text-[#8B5CF6]" />
+                  <span className="truncate">{t(item.label)}</span>
+                </button>
+              ))}
+            </div>
+          </PopoverContent>
+        </Popover>
+        <h1 className="text-sm sm:text-base font-semibold text-[var(--sk-text)] truncate">
           {t(pageTitleKey)}
         </h1>
       </div>
 
       {/* Right: Actions */}
-      <div className="flex items-center gap-1 sm:gap-2">
+      <div className="flex items-center gap-0 sm:gap-2 flex-shrink-0">
         {/* Exchange Rates */}
         <div className="hidden md:flex items-center gap-2 sm:gap-3 mr-1">
           {exchangeRates.map((rate) => (
@@ -198,7 +270,7 @@ export function TopBar() {
         </Popover>
 
         {/* Notifications */}
-        <Popover open={profileOpen} onOpenChange={setProfileOpen}>
+        <Popover open={notificationOpen} onOpenChange={setNotificationOpen}>
           <PopoverTrigger asChild>
             <button
               className="p-2 rounded-xl text-[var(--sk-text-secondary)] hover:text-[var(--sk-text)] hover:bg-[var(--sk-border-light)] transition-all"
@@ -219,13 +291,17 @@ export function TopBar() {
           >
             <div className="p-3 border-b flex items-center justify-between" style={{ borderColor: 'var(--sk-border)' }}>
               <h3 className="font-semibold text-sm text-[var(--sk-text)]">{t('topbar.notifications')}</h3>
-              <button className="text-xs text-[#8B5CF6] hover:underline">{t('topbar.markAllRead')}</button>
+              <button onClick={handleMarkAllRead} className="text-xs text-[#8B5CF6] hover:underline">{t('topbar.markAllRead')}</button>
             </div>
             <div className="max-h-60 overflow-y-auto">
-              {mockNotifications.slice(0, 5).map((n: Notification) => (
-                <div
+              {notifications.length === 0 && (
+                <p className="px-4 py-8 text-center text-xs text-[var(--sk-text-secondary)]">No new notifications</p>
+              )}
+              {notifications.slice(0, 8).map((n) => (
+                <button
                   key={n.id}
-                  className="flex gap-3 p-3 transition-colors hover:bg-[var(--sk-border-light)]"
+                  onClick={() => handleNotificationClick(n)}
+                  className="flex gap-3 p-3 w-full text-left transition-colors hover:bg-[var(--sk-border-light)]"
                   style={!n.read ? { backgroundColor: 'rgba(139,92,246,0.04)', borderLeft: '3px solid #8B5CF6' } : {}}
                 >
                   <div className="w-8 h-8 rounded-full bg-[#8B5CF6]/10 flex items-center justify-center flex-shrink-0">
@@ -240,7 +316,7 @@ export function TopBar() {
                     </p>
                   </div>
                   {!n.read && <div className="w-2 h-2 bg-[#8B5CF6] rounded-full flex-shrink-0 mt-1" />}
-                </div>
+                </button>
               ))}
             </div>
           </PopoverContent>
@@ -249,7 +325,7 @@ export function TopBar() {
         {/* Profile */}
         <Popover>
           <PopoverTrigger asChild>
-            <button className="flex items-center gap-2 pl-1 pr-2 py-1 rounded-xl hover:bg-[var(--sk-border-light)] transition-all">
+            <button className="flex items-center gap-2 pl-1 pr-1 sm:pr-2 py-1 rounded-xl hover:bg-[var(--sk-border-light)] transition-all">
               <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-[#8B5CF6] flex items-center justify-center text-white text-xs sm:text-sm font-medium">
                 {initial}
               </div>

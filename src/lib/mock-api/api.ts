@@ -1,7 +1,6 @@
 import {
   mockUser,
-  mockAIMessages, mockNotifications,
-  mockAnalyticsData, mockHistoryEvents,
+  mockAIMessages,
 } from './data';
 import { supabase } from '@/lib/supabase/client';
 import type {
@@ -592,7 +591,23 @@ export const fetchBudgets = async (): Promise<Budget[]> => {
     .order('created_at', { ascending: false });
 
   if (error) throw error;
-  return data.map(toBudget);
+  const budgets = data.map(toBudget);
+  const { transactions } = await fetchTransactions({ limit: 500 });
+  return budgets.map((budget) => {
+    const start = new Date(budget.year, budget.month - 1, 1);
+    const end = budget.period === 'weekly'
+      ? new Date(start.getFullYear(), start.getMonth(), start.getDate() + 7)
+      : new Date(start.getFullYear(), start.getMonth() + 1, 1);
+    const spent = transactions
+      .filter((transaction) => (
+        transaction.type === 'expense'
+        && transaction.categoryId === budget.categoryId
+        && new Date(transaction.date) >= start
+        && new Date(transaction.date) < end
+      ))
+      .reduce((sum, transaction) => sum + transaction.amount, 0);
+    return { ...budget, spent };
+  });
 };
 
 export const createBudget = async (data: Partial<Budget>) => {
@@ -686,23 +701,83 @@ export const sendAIMessage = async (
 
 // Notifications
 export const fetchNotifications = async (): Promise<Notification[]> => {
-  await delay(300);
-  return mockNotifications.map((n) => ({ ...n }));
+  const userId = await getUserId();
+  if (!userId) return [];
+  const readIds = new Set<string>(JSON.parse(localStorage.getItem(`skarbix-notifications-read:${userId}`) || '[]'));
+  const [transactionResult, budgets, debts, monobank] = await Promise.all([
+    fetchTransactions({ limit: 20 }),
+    fetchBudgets(),
+    fetchDebts(),
+    fetchMonobankStatus().catch(() => null),
+  ]);
+
+  const transactionNotifications: Notification[] = transactionResult.transactions
+    .filter((transaction) => transaction.source === 'monobank')
+    .slice(0, 5)
+    .map((transaction) => ({
+      id: `transaction:${transaction.id}`,
+      userId,
+      title: transaction.type === 'income' ? 'New income' : 'New transaction',
+      message: `${transaction.merchant}: ${transaction.type === 'income' ? '+' : '-'}${transaction.amount.toFixed(2)} UAH`,
+      type: 'transaction',
+      read: readIds.has(`transaction:${transaction.id}`),
+      createdAt: transaction.createdAt,
+    }));
+
+  const budgetNotifications: Notification[] = budgets
+    .filter((budget) => budget.amount > 0 && budget.spent / budget.amount >= budget.alertThreshold / 100)
+    .map((budget) => ({
+      id: `budget:${budget.id}:${budget.month}:${budget.year}`,
+      userId,
+      title: budget.spent > budget.amount ? 'Budget exceeded' : 'Budget warning',
+      message: `${budget.categoryName}: ${Math.round((budget.spent / budget.amount) * 100)}% used`,
+      type: 'budget',
+      read: readIds.has(`budget:${budget.id}:${budget.month}:${budget.year}`),
+      createdAt: new Date().toISOString(),
+    }));
+
+  const now = Date.now();
+  const debtNotifications: Notification[] = debts
+    .filter((debt) => debt.status !== 'paid' && debt.dueDate && new Date(debt.dueDate).getTime() <= now + 7 * 86400000)
+    .map((debt) => ({
+      id: `debt:${debt.id}`,
+      userId,
+      title: debt.direction === 'owed_to_me' ? 'Debt due soon' : 'Payment due soon',
+      message: `${debt.personName}: ${debt.amount.toFixed(2)} ${debt.currency}`,
+      type: 'debt',
+      read: readIds.has(`debt:${debt.id}`),
+      createdAt: debt.dueDate || debt.createdAt,
+    }));
+
+  const systemNotifications: Notification[] = monobank?.lastSync ? [{
+    id: `monobank:${monobank.lastSync}`,
+    userId,
+    title: 'Monobank synchronized',
+    message: `${monobank.importedTransactions} transactions imported`,
+    type: 'system',
+    read: readIds.has(`monobank:${monobank.lastSync}`),
+    createdAt: monobank.lastSync,
+  }] : [];
+
+  return [...budgetNotifications, ...debtNotifications, ...transactionNotifications, ...systemNotifications]
+    .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+    .slice(0, 20);
 };
 
 export const markNotificationRead = async (id: string) => {
-  await delay(200);
-  const idx = mockNotifications.findIndex((n) => n.id === id);
-  if (idx >= 0) {
-    mockNotifications[idx] = { ...mockNotifications[idx], read: true };
-  }
+  const userId = await getUserId();
+  if (!userId) return;
+  const key = `skarbix-notifications-read:${userId}`;
+  const ids = new Set<string>(JSON.parse(localStorage.getItem(key) || '[]'));
+  ids.add(id);
+  localStorage.setItem(key, JSON.stringify([...ids]));
 };
 
 export const markAllNotificationsRead = async () => {
-  await delay(200);
-  mockNotifications.forEach((n, i) => {
-    mockNotifications[i] = { ...n, read: true };
-  });
+  const userId = await getUserId();
+  if (!userId) return;
+  const notifications = await fetchNotifications();
+  localStorage.setItem(`skarbix-notifications-read:${userId}`, JSON.stringify(notifications.map((item) => item.id)));
 };
 
 // Monobank
@@ -811,21 +886,107 @@ export const fetchTransactionOverview = async (): Promise<TransactionOverviewDat
 
 // Analytics
 export const fetchAnalytics = async (): Promise<AnalyticsData> => {
-  await delay(600);
+  const { transactions } = await fetchTransactions({ limit: 500 });
+  const now = new Date();
+  const monthStarts = Array.from({ length: 6 }, (_, index) => (
+    new Date(now.getFullYear(), now.getMonth() - 5 + index, 1)
+  ));
+  const monthLabels = monthStarts.map((date) => date.toLocaleDateString('en-US', { month: 'short' }));
+  const monthlyIncome = monthStarts.map((start) => {
+    const end = new Date(start.getFullYear(), start.getMonth() + 1, 1);
+    return transactions.filter((tx) => tx.type === 'income' && new Date(tx.date) >= start && new Date(tx.date) < end)
+      .reduce((sum, tx) => sum + tx.amount, 0);
+  });
+  const monthlyExpense = monthStarts.map((start) => {
+    const end = new Date(start.getFullYear(), start.getMonth() + 1, 1);
+    return transactions.filter((tx) => tx.type === 'expense' && new Date(tx.date) >= start && new Date(tx.date) < end)
+      .reduce((sum, tx) => sum + tx.amount, 0);
+  });
+  const currentStart = monthStarts[monthStarts.length - 1];
+  const currentTransactions = transactions.filter((tx) => new Date(tx.date) >= currentStart);
+  const categoryMap = new Map<string, number>();
+  const merchantMap = new Map<string, { amount: number; count: number }>();
+  const dailyMap = new Map<string, number>();
+  currentTransactions.filter((tx) => tx.type === 'expense').forEach((tx) => {
+    categoryMap.set(tx.category, (categoryMap.get(tx.category) || 0) + tx.amount);
+    const merchant = merchantMap.get(tx.merchant) || { amount: 0, count: 0 };
+    merchantMap.set(tx.merchant, { amount: merchant.amount + tx.amount, count: merchant.count + 1 });
+    const date = tx.date.slice(0, 10);
+    dailyMap.set(date, (dailyMap.get(date) || 0) + tx.amount);
+  });
+  const palette = ['#8B5CF6', '#10B981', '#F59E0B', '#EF4444', '#3B82F6', '#EC4899', '#06B6D4'];
+  const currentIncome = monthlyIncome.at(-1) || 0;
+  const currentExpense = monthlyExpense.at(-1) || 0;
+  const elapsedDays = Math.max(1, now.getDate());
+  const daysInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
   return {
-    monthlyIncome: [...mockAnalyticsData.monthlyIncome],
-    monthlyExpense: [...mockAnalyticsData.monthlyExpense],
-    monthlySavings: [...mockAnalyticsData.monthlySavings],
-    categoryBreakdown: mockAnalyticsData.categoryBreakdown.map((c) => ({ ...c })),
-    dailySpending: mockAnalyticsData.dailySpending.map((d) => ({ ...d })),
-    topMerchants: mockAnalyticsData.topMerchants.map((m) => ({ ...m })),
+    monthLabels,
+    monthlyIncome,
+    monthlyExpense,
+    monthlySavings: monthlyIncome.map((income, index) => income - monthlyExpense[index]),
+    categoryBreakdown: [...categoryMap.entries()]
+      .map(([name, amount], index) => ({ name, amount, color: palette[index % palette.length] }))
+      .sort((a, b) => b.amount - a.amount),
+    dailySpending: [...dailyMap.entries()].map(([date, amount]) => ({ date, amount })).sort((a, b) => a.date.localeCompare(b.date)),
+    topMerchants: [...merchantMap.entries()]
+      .map(([name, value]) => ({ name, ...value }))
+      .sort((a, b) => b.amount - a.amount)
+      .slice(0, 5),
+    currentIncome,
+    currentExpense,
+    previousExpense: monthlyExpense.at(-2) || 0,
+    projectedSavings: currentIncome - (currentExpense / elapsedDays) * daysInMonth,
   };
 };
 
 // History
 export const fetchHistory = async (): Promise<HistoryEvent[]> => {
-  await delay(400);
-  return mockHistoryEvents.map((h) => ({ ...h }));
+  const userId = await getUserId();
+  if (!userId) return [];
+  const [auditResult, transactionResult, debts] = await Promise.all([
+    supabase.from('audit_logs').select('id,action,metadata,created_at').eq('user_id', userId).order('created_at', { ascending: false }).limit(50),
+    fetchTransactions({ limit: 30 }),
+    fetchDebts(),
+  ]);
+  if (auditResult.error) throw auditResult.error;
+
+  const auditEvents: HistoryEvent[] = auditResult.data.map((row) => {
+    const metadata = row.metadata as Record<string, unknown> | null;
+    if (row.action.startsWith('monobank.')) {
+      return {
+        id: `audit:${row.id}`,
+        type: 'monobank_sync',
+        title: 'Monobank activity',
+        description: row.action.replaceAll('.', ' '),
+        timestamp: row.created_at,
+      };
+    }
+    return {
+      id: `audit:${row.id}`,
+      type: 'setting_change',
+      title: row.action === 'ai.message.sent' ? 'AI assistant used' : 'Account activity',
+      description: metadata?.proposed_debt ? 'AI prepared a debt action for confirmation.' : row.action.replaceAll('.', ' '),
+      timestamp: row.created_at,
+    };
+  });
+  const transactionEvents: HistoryEvent[] = transactionResult.transactions.slice(0, 20).map((transaction) => ({
+    id: `transaction:${transaction.id}`,
+    type: transaction.source === 'ai' ? 'ai_transaction' : 'transaction',
+    title: transaction.source === 'ai' ? 'AI transaction confirmed' : 'Transaction recorded',
+    description: `${transaction.merchant}: ${transaction.type === 'income' ? '+' : '-'}${transaction.amount.toFixed(2)} UAH`,
+    timestamp: transaction.createdAt,
+  }));
+  const debtEvents: HistoryEvent[] = debts.filter((debt) => debt.status === 'paid').map((debt) => ({
+    id: `debt:${debt.id}`,
+    type: 'debt_paid',
+    title: 'Debt settled',
+    description: `${debt.personName}: ${debt.amount.toFixed(2)} ${debt.currency}`,
+    timestamp: debt.settledAt || debt.createdAt,
+  }));
+
+  return [...auditEvents, ...transactionEvents, ...debtEvents]
+    .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
+    .slice(0, 100);
 };
 
 // Capital

@@ -1,7 +1,6 @@
 import type {
   User, Account, Transaction, Category, Budget, Debt,
-  AIMessage, Notification, AnalyticsData, MonobankConnection,
-  CashFlowData, TransactionOverviewData, HistoryEvent
+  AIMessage, MonobankConnection, CashFlowData, TransactionOverviewData
 } from '@/types';
 
 export const mockUser: User = {
@@ -211,34 +210,6 @@ export const mockAIMessages: AIMessage[] = [
   },
 ];
 
-export const mockNotifications: Notification[] = [
-  {
-    id: 'n1', userId: '1', title: 'Budget Alert',
-    message: 'Your Taxi budget is at 94.5%. Only ₴110 remaining.',
-    type: 'budget', read: false, createdAt: '2025-05-25T09:00:00',
-  },
-  {
-    id: 'n2', userId: '1', title: 'New Transaction',
-    message: 'Bolt charged ₴89.00 for Taxi.',
-    type: 'transaction', read: false, createdAt: '2025-05-24T08:20:00',
-  },
-  {
-    id: 'n3', userId: '1', title: 'Debt Reminder',
-    message: 'Sasha Petrov owes you ₴1,200. Due in 5 days.',
-    type: 'debt', read: true, createdAt: '2025-05-20T10:00:00',
-  },
-  {
-    id: 'n4', userId: '1', title: 'AI Insight',
-    message: 'You spent 23% more on restaurants this week. Want to set a limit?',
-    type: 'ai', read: true, createdAt: '2025-05-19T18:00:00',
-  },
-  {
-    id: 'n5', userId: '1', title: 'Monobank Synced',
-    message: 'Successfully imported 12 new transactions.',
-    type: 'system', read: true, createdAt: '2025-05-18T14:30:00',
-  },
-];
-
 export const mockMonobankConnection: MonobankConnection = {
   connected: true,
   status: 'connected',
@@ -274,39 +245,3 @@ export const mockTransactionOverviewData: TransactionOverviewData[] = Array.from
     previous: Math.round(basePrevious),
   };
 });
-
-export const mockAnalyticsData: AnalyticsData = {
-  monthlyIncome: [45000, 48000, 42000, 52000, 35000, 48000],
-  monthlyExpense: [32000, 35000, 38000, 34000, 28000, 31000],
-  monthlySavings: [13000, 13000, 4000, 18000, 7000, 17000],
-  categoryBreakdown: [
-    { name: 'Bills', amount: 4500, color: '#EF4444' },
-    { name: 'Groceries', amount: 6200, color: '#84CC16' },
-    { name: 'Shopping', amount: 5600, color: '#EC4899' },
-    { name: 'Food & Drinks', amount: 8450, color: '#F59E0B' },
-    { name: 'Taxi', amount: 2340, color: '#8B5CF6' },
-    { name: 'Entertainment', amount: 1200, color: '#10B981' },
-    { name: 'Subscriptions', amount: 597, color: '#6366F1' },
-    { name: 'Health', amount: 800, color: '#06B6D4' },
-  ],
-  dailySpending: Array.from({ length: 30 }, (_, i) => ({
-    date: `2025-05-${String(i + 1).padStart(2, '0')}`,
-    amount: Math.round(200 + Math.random() * 1500),
-  })),
-  topMerchants: [
-    { name: 'Silpo', amount: 6200, count: 12 },
-    { name: 'Bolt', amount: 1890, count: 18 },
-    { name: 'Rozetka', amount: 5600, count: 5 },
-    { name: 'Kyivstar', amount: 1200, count: 1 },
-    { name: 'Glovo', amount: 1450, count: 8 },
-  ],
-};
-
-export const mockHistoryEvents: HistoryEvent[] = [
-  { id: 'h1', type: 'monobank_sync', title: 'Monobank Synced', description: 'Successfully imported 12 new transactions from Monobank.', timestamp: '2025-05-25T08:00:00' },
-  { id: 'h2', type: 'ai_transaction', title: 'AI Created Transaction', description: 'AI added taxi expense of ₴450 from your message.', timestamp: '2025-05-25T08:05:00' },
-  { id: 'h3', type: 'budget_exceeded', title: 'Budget Exceeded', description: 'Shopping budget exceeded by ₴600.', timestamp: '2025-05-23T16:00:00' },
-  { id: 'h4', type: 'debt_paid', title: 'Debt Settled', description: 'Olena Shevchenko paid back ₴2,000.', timestamp: '2025-04-25T12:00:00' },
-  { id: 'h5', type: 'category_edit', title: 'Category Updated', description: 'You changed "Bolt" transactions to Taxi category.', timestamp: '2025-04-20T10:00:00' },
-  { id: 'h6', type: 'setting_change', title: 'Settings Updated', description: 'Monthly budget increased to ₴45,000.', timestamp: '2025-04-01T00:00:00' },
-];

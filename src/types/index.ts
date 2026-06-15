@@ -153,12 +153,17 @@ export interface Notification {
 }
 
 export interface AnalyticsData {
+  monthLabels: string[];
   monthlyIncome: number[];
   monthlyExpense: number[];
   monthlySavings: number[];
   categoryBreakdown: { name: string; amount: number; color: string }[];
   dailySpending: { date: string; amount: number }[];
   topMerchants: { name: string; amount: number; count: number }[];
+  currentIncome: number;
+  currentExpense: number;
+  previousExpense: number;
+  projectedSavings: number;
 }
 
 export interface MonobankConnection {
@@ -195,7 +200,7 @@ export interface TransactionOverviewData {
 
 export interface HistoryEvent {
   id: string;
-  type: 'monobank_sync' | 'ai_transaction' | 'category_edit' | 'budget_exceeded' | 'debt_paid' | 'setting_change';
+  type: 'monobank_sync' | 'ai_transaction' | 'category_edit' | 'budget_exceeded' | 'debt_paid' | 'setting_change' | 'transaction';
   title: string;
   description: string;
   timestamp: string;
